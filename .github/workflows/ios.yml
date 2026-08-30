@@ -1,0 +1,76 @@
+name: Build və ekran görüntüsü
+
+# Windows-da Mac olmadan yoxlamaq üçün: hər push-da layihə qurulur,
+# simulyatorda işə salınır və ekran görüntüsü artefakt kimi yüklənir.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Alətlərin versiyası
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: XcodeGen quraşdır
+        run: brew install xcodegen
+
+      - name: Layihəni yarat
+        run: xcodegen generate
+
+      - name: Build (iOS Simulator)
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project LiquidPlayer.xcodeproj \
+            -scheme LiquidPlayer \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcbeautify || xcodebuild build \
+            -project LiquidPlayer.xcodeproj \
+            -scheme LiquidPlayer \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Simulyator yarat və appı işə sal
+        run: |
+          RUNTIME=$(xcrun simctl list runtimes --json \
+            | jq -r '.runtimes[] | select(.platform == "iOS" and .isAvailable) | .identifier' | tail -1)
+          DEVICE_TYPE=$(xcrun simctl list devicetypes --json \
+            | jq -r '.devicetypes[] | select(.name | startswith("iPhone 16")) | .identifier' | head -1)
+          echo "Runtime: $RUNTIME"
+          echo "Device:  $DEVICE_TYPE"
+
+          UDID=$(xcrun simctl create ci-device "$DEVICE_TYPE" "$RUNTIME")
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+
+          APP=$(find build/Build/Products -name "LiquidPlayer.app" -maxdepth 3 | head -1)
+          echo "App: $APP"
+          xcrun simctl install "$UDID" "$APP"
+          xcrun simctl launch "$UDID" com.example.liquidplayer
+
+          # Appın ilk kadrı çəkilənə qədər gözləyirik.
+          sleep 8
+          mkdir -p screenshots
+          xcrun simctl io "$UDID" screenshot screenshots/01-library.png
+
+      - name: Ekran görüntülərini yüklə
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulator-screenshots
+          path: screenshots/
+          if-no-files-found: warn
