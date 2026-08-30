@@ -14,9 +14,12 @@ final class VLCPlaybackEngine: NSObject, PlaybackEngine {
     var onSnapshot: ((PlaybackSnapshot) -> Void)?
     var onFinished: (() -> Void)?
     var onFailure: ((PlaybackError) -> Void)?
+    var onTracksChanged: (() -> Void)?
 
     let supportsPictureInPicture = false
     let supportsAirPlayVideo = false
+    let supportsExternalSubtitles = true
+    let supportsSubtitleDelay = true
 
     private let player = VLCMediaPlayer()
     private lazy var renderView: UIView = {
@@ -70,33 +73,59 @@ final class VLCPlaybackEngine: NSObject, PlaybackEngine {
 
     // MARK: - Altyazı və səs trekləri (VLC-nin əsas üstünlüyü)
 
-    var subtitleTracks: [(index: Int32, name: String)] {
-        zip(
-            player.videoSubTitlesIndexes.compactMap { $0 as? Int32 },
-            player.videoSubTitlesNames.compactMap { $0 as? String }
-        ).map { ($0, $1) }
+    var subtitleTracks: [MediaTrack] {
+        Self.tracks(indexes: player.videoSubTitlesIndexes, names: player.videoSubTitlesNames)
     }
 
-    func selectSubtitle(index: Int32) { player.currentVideoSubTitleIndex = index }
+    var audioTracks: [MediaTrack] {
+        Self.tracks(indexes: player.audioTrackIndexes, names: player.audioTrackNames)
+    }
 
-    /// Xarici .srt faylı yükləyir.
-    func addSubtitle(url: URL) {
+    /// VLCKit bu siyahıları `[Any]!` kimi verir — media hələ açılmayıbsa `nil` gəlir,
+    /// yəni boş siyahı çökmə yox, sadəcə boş seçici deməkdir.
+    private static func tracks(indexes: [Any]?, names: [Any]?) -> [MediaTrack] {
+        // Parametrlər optional elan olunub — VLCKit-in `[Any]!` dəyəri
+        // çağırış yerində avtomatik optional-a çevrilir və `nil` təhlükəsiz keçir.
+        guard let indexes, let names else { return [] }
+
+        return zip(indexes, names).compactMap { index, name in
+            // VLC indeksləri NSNumber kimi qaytarır; birbaşa Int32-yə cast həmişə tutmur.
+            guard let id = (index as? NSNumber)?.int32Value else { return nil }
+            let title = (name as? String) ?? "Track \(id)"
+            return MediaTrack(id: id, name: title)
+        }
+    }
+
+    var currentSubtitleTrackID: Int32? {
+        // VLC söndürülmüş altyazını -1 ilə göstərir.
+        player.currentVideoSubTitleIndex >= 0 ? player.currentVideoSubTitleIndex : nil
+    }
+
+    var currentAudioTrackID: Int32? {
+        player.currentAudioTrackIndex >= 0 ? player.currentAudioTrackIndex : nil
+    }
+
+    func selectSubtitle(id: Int32?) {
+        player.currentVideoSubTitleIndex = id ?? -1
+        onTracksChanged?()
+    }
+
+    func selectAudioTrack(id: Int32) {
+        player.currentAudioTrackIndex = id
+        onTracksChanged?()
+    }
+
+    /// Yanındakı .srt faylını yükləyir və dərhal aktiv edir.
+    func loadExternalSubtitle(url: URL) {
         player.addPlaybackSlave(url, type: .subtitle, enforce: true)
+        onTracksChanged?()
     }
 
-    /// Altyazını irəli/geri sürüşdürür (mikrosaniyə).
-    func setSubtitleDelay(seconds: Double) {
-        player.currentVideoSubTitleDelay = Int(seconds * 1_000_000)
+    /// Altyazını irəli/geri sürüşdürür. VLC mikrosaniyə ilə işləyir.
+    var subtitleDelay: Double {
+        get { Double(player.currentVideoSubTitleDelay) / 1_000_000 }
+        set { player.currentVideoSubTitleDelay = Int(newValue * 1_000_000) }
     }
-
-    var audioTracks: [(index: Int32, name: String)] {
-        zip(
-            player.audioTrackIndexes.compactMap { $0 as? Int32 },
-            player.audioTrackNames.compactMap { $0 as? String }
-        ).map { ($0, $1) }
-    }
-
-    func selectAudioTrack(index: Int32) { player.currentAudioTrackIndex = index }
 
     // MARK: - Detallar
 
@@ -127,6 +156,10 @@ extension VLCPlaybackEngine: VLCMediaPlayerDelegate {
                 self.onFinished?()
             case .error:
                 self.onFailure?(.engineFailed("VLC playback error"))
+            case .playing:
+                // Treklər yalnız media açılandan sonra sadalanır.
+                self.onTracksChanged?()
+                self.emitSnapshot()
             default:
                 self.emitSnapshot()
             }

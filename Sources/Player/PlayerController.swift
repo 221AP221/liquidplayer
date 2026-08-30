@@ -30,7 +30,26 @@ final class PlayerController {
     var suppressDecodingNotice = false
 
     var isPlaying: Bool { snapshot.isPlaying }
+
+    // MARK: - Treklər və PiP
+    //
+    // Bunlar hesablanan xassə deyil, saxlanan dəyərdir: `@Observable` yalnız
+    // saxlanan dəyər dəyişəndə UI-ı yeniləyir, mühərriyi hər dəfə sorğulamaq isə
+    // yenilənməni işə salmır.
+
+    private(set) var subtitleTracks: [MediaTrack] = []
+    private(set) var audioTracks: [MediaTrack] = []
+    private(set) var currentSubtitleTrackID: Int32?
+    private(set) var currentAudioTrackID: Int32?
+
     var supportsPictureInPicture: Bool { engine?.supportsPictureInPicture ?? false }
+    var supportsExternalSubtitles: Bool { engine?.supportsExternalSubtitles ?? false }
+    var supportsSubtitleDelay: Bool { engine?.supportsSubtitleDelay ?? false }
+    private(set) var isPictureInPictureActive = false
+    private(set) var subtitleDelay: Double = 0
+
+    /// Video oynayırsa və mühərrik dəstəkləyirsə trek seçicisi açıla bilər.
+    var canChooseTracks: Bool { !subtitleTracks.isEmpty || !audioTracks.isEmpty }
 
     // MARK: - Daxili
 
@@ -146,6 +165,53 @@ final class PlayerController {
 
     func dismissNotice() { notice = nil }
 
+    // MARK: - Trek seçimi
+
+    func selectSubtitle(id: Int32?) {
+        engine?.selectSubtitle(id: id)
+        refreshTracks()
+    }
+
+    func selectAudioTrack(id: Int32) {
+        engine?.selectAudioTrack(id: id)
+        refreshTracks()
+    }
+
+    func loadExternalSubtitle(url: URL) {
+        guard let engine, engine.supportsExternalSubtitles else { return }
+        // Xarici fayl da security-scoped-dur; oxunub bitənə qədər açıq qalmalıdır.
+        let opened = url.startAccessingSecurityScopedResource()
+        engine.loadExternalSubtitle(url: url)
+        if opened { url.stopAccessingSecurityScopedResource() }
+        refreshTracks()
+    }
+
+    func setSubtitleDelay(_ seconds: Double) {
+        guard let engine, engine.supportsSubtitleDelay else { return }
+        engine.subtitleDelay = seconds
+        subtitleDelay = seconds
+    }
+
+    private func refreshTracks() {
+        subtitleTracks = engine?.subtitleTracks ?? []
+        audioTracks = engine?.audioTracks ?? []
+        currentSubtitleTrackID = engine?.currentSubtitleTrackID
+        currentAudioTrackID = engine?.currentAudioTrackID
+        subtitleDelay = engine?.subtitleDelay ?? 0
+    }
+
+    // MARK: - Picture-in-Picture
+
+    func togglePictureInPicture() {
+        guard let engine, engine.supportsPictureInPicture else { return }
+        if engine.isPictureInPictureActive {
+            engine.stopPictureInPicture()
+        } else {
+            engine.startPictureInPicture()
+        }
+        isPictureInPictureActive = engine.isPictureInPictureActive
+    }
+
     func makeVideoView() -> UIView? { engine?.makeVideoView() }
 
     // MARK: - Fayla giriş
@@ -173,6 +239,12 @@ final class PlayerController {
 
     private func stopCurrent() {
         saveProgress(force: true)
+        subtitleTracks = []
+        audioTracks = []
+        currentSubtitleTrackID = nil
+        currentAudioTrackID = nil
+        subtitleDelay = 0
+        isPictureInPictureActive = false
         engine?.teardown()
         engine = nil
         if let accessedURL {
@@ -191,6 +263,9 @@ final class PlayerController {
         engine.onFinished = { [weak self] in
             self?.current?.progress = 1
             self?.next()
+        }
+        engine.onTracksChanged = { [weak self] in
+            self?.refreshTracks()
         }
         engine.onFailure = { [weak self] _ in
             guard let self, let item = self.current else { return }

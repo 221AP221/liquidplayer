@@ -70,13 +70,25 @@ xəbərdarlıq göstərir: PiP yoxdur, AirPlay yalnız güzgü, batareya iki də
 avtomatik yenilənir; həll olunmursa element `isMissing` işarələnir və kitabxanada gizlənir —
 amma oxunmuş yeri, əlfəcinləri silinmir, qovluq qayıdanda hər şey yerinə düşür.
 
+**Treklər hər iki mühərrikdə eyni görünür.** `MediaTrack` sadə struktdur;
+AVFoundation-da `AVMediaSelectionOption` indeksinə, VLC-də isə tam indeksə çevrilir.
+Siyahı gec gəldiyi üçün mühərrik `onTracksChanged` çağırır və `PlayerController` onu
+saxlanan dəyərə köçürür — `@Observable` yalnız belə yenilənməni işə salır.
+
+**PiP yalnız AVFoundation-da.** `AVPictureInPictureController` player layer-ə bağlanır və
+`canStartPictureInPictureAutomaticallyFromInline` sayəsində istifadəçi appdan çıxanda
+video özü kiçik pəncərəyə keçir. VLC ilə oynayan fayllarda düymə əvəzinə AirPlay görünür,
+trek vərəqəsində isə nəyin itdiyi açıq yazılır.
+
+**Metadata oxunması MainActor-dan kənardadır.** `AVAsset`, `AVMetadataItem` və
+`AVAssetTrack` Sendable deyil, ona görə onlar `probeMetadata` funksiyasından bayıra
+çıxmır — yalnız Sendable `Probe` strukturu qayıdır. Swift 6 xəbərdarlıqları bununla bağlı idi.
+
 **Tərəqqi tez-tez yazılmır.** `PlayerController` hər ~2 saniyədə bir SwiftData-ya yazır,
 trek dəyişəndə isə məcburi. Böyük kitabxanada bu fərq hiss olunur.
 
 ## Nə hazır deyil
 
-- Altyazı seçici UI-ı (mühərrik tərəfi `VLCPlaybackEngine`-də hazırdır)
-- Picture-in-Picture (`AVPictureInPictureController` qoşulmalıdır)
 - Səsli kitab fəsilləri, əlfəcinlər
 - Ekvalayzer (`AVAudioEngine` və ya VLC-nin öz EQ-su)
 - iPad sidebar layoutu

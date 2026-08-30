@@ -1,70 +1,104 @@
 {
   "sourceLanguage": "az",
   "strings": {
-    "tab.library": {
+    "action.done": {
       "extractionState": "manual",
       "localizations": {
         "az": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kitabxana"
+            "value": "Bitir"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Library"
+            "value": "Done"
           }
         }
       }
     },
-    "tab.folders": {
+    "action.gotIt": {
       "extractionState": "manual",
       "localizations": {
         "az": {
           "stringUnit": {
             "state": "translated",
-            "value": "Qovluqlar"
+            "value": "Aydındır"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Folders"
+            "value": "Got it"
           }
         }
       }
     },
-    "tab.search": {
+    "action.ok": {
       "extractionState": "manual",
       "localizations": {
         "az": {
           "stringUnit": {
             "state": "translated",
-            "value": "Axtarış"
+            "value": "Oldu"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Search"
+            "value": "OK"
           }
         }
       }
     },
-    "tab.more": {
+    "empty.addFolder": {
       "extractionState": "manual",
       "localizations": {
         "az": {
           "stringUnit": {
             "state": "translated",
-            "value": "Daha çox"
+            "value": "Qovluq əlavə et"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "More"
+            "value": "Add folder"
+          }
+        }
+      }
+    },
+    "empty.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qovluq əlavə et — app onu izləyəcək və yeni fayllar özü görünəcək."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a folder — the app watches it, and new files show up on their own."
+          }
+        }
+      }
+    },
+    "empty.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kitabxana hələ boşdur"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your library is empty"
           }
         }
       }
@@ -120,278 +154,6 @@
         }
       }
     },
-    "section.continue": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Davam et"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Continue"
-          }
-        }
-      }
-    },
-    "section.recent": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Son əlavə olunanlar"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recently added"
-          }
-        }
-      }
-    },
-    "row.remaining": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ qalıb"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ left"
-          }
-        }
-      }
-    },
-    "empty.title": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kitabxana hələ boşdur"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your library is empty"
-          }
-        }
-      }
-    },
-    "empty.body": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Qovluq əlavə et — app onu izləyəcək və yeni fayllar özü görünəcək."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add a folder — the app watches it, and new files show up on their own."
-          }
-        }
-      }
-    },
-    "empty.addFolder": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Qovluq əlavə et"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add folder"
-          }
-        }
-      }
-    },
-    "nowplaying.fromAlbum": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Albomdan"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "From album"
-          }
-        }
-      }
-    },
-    "menu.showInFolder": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Qovluqda göstər"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Show in folder"
-          }
-        }
-      }
-    },
-    "menu.fileInfo": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fayl haqqında"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "File info"
-          }
-        }
-      }
-    },
-    "queue.title": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Növbə"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Up next"
-          }
-        }
-      }
-    },
-    "queue.playingNext": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Növbəti oxunacaq"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Playing next"
-          }
-        }
-      }
-    },
-    "lyrics.title": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sözlər"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lyrics"
-          }
-        }
-      }
-    },
-    "lyrics.empty": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bu fayl üçün söz tapılmadı. Yanında .lrc faylı olsa, avtomatik oxunacaq."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No lyrics for this file. Drop an .lrc next to it and they load automatically."
-          }
-        }
-      }
-    },
-    "action.done": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bitir"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Done"
-          }
-        }
-      }
-    },
-    "action.ok": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Oldu"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "OK"
-          }
-        }
-      }
-    },
-    "action.gotIt": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aydındır"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Got it"
-          }
-        }
-      }
-    },
     "folders.count": {
       "extractionState": "manual",
       "localizations": {
@@ -426,257 +188,19 @@
         }
       }
     },
-    "search.prompt": {
+    "import.failed": {
       "extractionState": "manual",
       "localizations": {
         "az": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kitabxanada axtar"
+            "value": "İdxal alınmadı"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Search library"
-          }
-        }
-      }
-    },
-    "settings.playback": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Oxutma"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Playback"
-          }
-        }
-      }
-    },
-    "settings.engine": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mühərrik"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Engine"
-          }
-        }
-      }
-    },
-    "settings.suppressNotice": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dekodlaşdırma xəbərdarlığını gizlət"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hide decoding warning"
-          }
-        }
-      }
-    },
-    "settings.rate": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sürət"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Speed"
-          }
-        }
-      }
-    },
-    "settings.about": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Haqqında"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "About"
-          }
-        }
-      }
-    },
-    "settings.privacyNote": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fayllar cihazdan çıxmır. Analitika və şəbəkə sorğusu yoxdur."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Files never leave the device. No analytics, no network calls."
-          }
-        }
-      }
-    },
-    "notice.software.title": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Proqram dekodlaşdırma"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Software decoding"
-          }
-        }
-      }
-    },
-    "notice.software.body": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bu fayl VLC mühərriki ilə oynayır: PiP işləmir, AirPlay yalnız ekran güzgüsüdür, batareya sürətli boşalır."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This file plays through the VLC engine: no PiP, AirPlay is screen mirroring only, and the battery drains faster."
-          }
-        }
-      }
-    },
-    "notice.missing.title": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fayl tapılmadı"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "File not found"
-          }
-        }
-      }
-    },
-    "notice.missing.body": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fayl köçürülüb və ya silinib. Qovluğu yenidən seçsən, yeri bərpa olunacaq."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The file was moved or deleted. Pick the folder again to restore it."
-          }
-        }
-      }
-    },
-    "notice.unsupported.title": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Format açılmır"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Format not supported"
-          }
-        }
-      }
-    },
-    "notice.unsupported.body": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bu format nə aparat, nə də VLC mühərriki tərəfindən oxunur."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Neither the hardware decoder nor the VLC engine can read this format."
-          }
-        }
-      }
-    },
-    "notice.corrupt.title": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Oxunuş dayandı"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Playback stopped"
-          }
-        }
-      }
-    },
-    "notice.corrupt.body": {
-      "extractionState": "manual",
-      "localizations": {
-        "az": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Faylın bu hissəsi yarımçıq görünür — yüklənmə yarıda qalmış ola bilər."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This part of the file looks incomplete — the download may have been cut short."
+            "value": "Import failed"
           }
         }
       }
@@ -698,19 +222,699 @@
         }
       }
     },
-    "import.failed": {
+    "lyrics.empty": {
       "extractionState": "manual",
       "localizations": {
         "az": {
           "stringUnit": {
             "state": "translated",
-            "value": "İdxal alınmadı"
+            "value": "Bu fayl üçün söz tapılmadı. Yanında .lrc faylı olsa, avtomatik oxunacaq."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Import failed"
+            "value": "No lyrics for this file. Drop an .lrc next to it and they load automatically."
+          }
+        }
+      }
+    },
+    "lyrics.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sözlər"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lyrics"
+          }
+        }
+      }
+    },
+    "menu.fileInfo": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fayl haqqında"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "File info"
+          }
+        }
+      }
+    },
+    "menu.showInFolder": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qovluqda göstər"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show in folder"
+          }
+        }
+      }
+    },
+    "notice.corrupt.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Faylın bu hissəsi yarımçıq görünür — yüklənmə yarıda qalmış ola bilər."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This part of the file looks incomplete — the download may have been cut short."
+          }
+        }
+      }
+    },
+    "notice.corrupt.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oxunuş dayandı"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playback stopped"
+          }
+        }
+      }
+    },
+    "notice.missing.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fayl köçürülüb və ya silinib. Qovluğu yenidən seçsən, yeri bərpa olunacaq."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file was moved or deleted. Pick the folder again to restore it."
+          }
+        }
+      }
+    },
+    "notice.missing.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fayl tapılmadı"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "File not found"
+          }
+        }
+      }
+    },
+    "notice.software.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu fayl VLC mühərriki ilə oynayır: PiP işləmir, AirPlay yalnız ekran güzgüsüdür, batareya sürətli boşalır."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This file plays through the VLC engine: no PiP, AirPlay is screen mirroring only, and the battery drains faster."
+          }
+        }
+      }
+    },
+    "notice.software.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Proqram dekodlaşdırma"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Software decoding"
+          }
+        }
+      }
+    },
+    "notice.unsupported.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu format nə aparat, nə də VLC mühərriki tərəfindən oxunur."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neither the hardware decoder nor the VLC engine can read this format."
+          }
+        }
+      }
+    },
+    "notice.unsupported.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Format açılmır"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Format not supported"
+          }
+        }
+      }
+    },
+    "nowplaying.fromAlbum": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Albomdan"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From album"
+          }
+        }
+      }
+    },
+    "queue.playingNext": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Növbəti oxunacaq"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playing next"
+          }
+        }
+      }
+    },
+    "queue.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Növbə"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Up next"
+          }
+        }
+      }
+    },
+    "row.remaining": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ qalıb"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ left"
+          }
+        }
+      }
+    },
+    "search.prompt": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kitabxanada axtar"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search library"
+          }
+        }
+      }
+    },
+    "section.continue": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Davam et"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
+          }
+        }
+      }
+    },
+    "section.recent": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son əlavə olunanlar"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recently added"
+          }
+        }
+      }
+    },
+    "settings.about": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haqqında"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About"
+          }
+        }
+      }
+    },
+    "settings.engine": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mühərrik"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Engine"
+          }
+        }
+      }
+    },
+    "settings.playback": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oxutma"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playback"
+          }
+        }
+      }
+    },
+    "settings.privacyNote": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fayllar cihazdan çıxmır. Analitika və şəbəkə sorğusu yoxdur."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Files never leave the device. No analytics, no network calls."
+          }
+        }
+      }
+    },
+    "settings.rate": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sürət"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speed"
+          }
+        }
+      }
+    },
+    "settings.suppressNotice": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dekodlaşdırma xəbərdarlığını gizlət"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide decoding warning"
+          }
+        }
+      }
+    },
+    "tab.folders": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qovluqlar"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Folders"
+          }
+        }
+      }
+    },
+    "tab.library": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kitabxana"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Library"
+          }
+        }
+      }
+    },
+    "tab.more": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daha çox"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More"
+          }
+        }
+      }
+    },
+    "tab.search": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Axtarış"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search"
+          }
+        }
+      }
+    },
+    "tracks.audio": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Səs treki"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audio track"
+          }
+        }
+      }
+    },
+    "tracks.limitations": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu faylda mövcud deyil"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not available for this file"
+          }
+        }
+      }
+    },
+    "tracks.loadFile": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fayldan altyazı yüklə"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Load subtitle from file"
+          }
+        }
+      }
+    },
+    "tracks.mirrorOnly": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AirPlay yalnız ekran güzgüsü kimi"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AirPlay is screen mirroring only"
+          }
+        }
+      }
+    },
+    "tracks.noAudio": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Səs treki siyahısı boşdur."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No audio tracks listed."
+          }
+        }
+      }
+    },
+    "tracks.noPiP": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Picture-in-Picture işləmir"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Picture-in-Picture is unavailable"
+          }
+        }
+      }
+    },
+    "tracks.noSubtitles": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu faylda altyazı treki yoxdur."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This file has no subtitle track."
+          }
+        }
+      }
+    },
+    "tracks.subtitles": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Altyazı"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subtitles"
+          }
+        }
+      }
+    },
+    "tracks.subtitlesOff": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Söndür"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off"
+          }
+        }
+      }
+    },
+    "tracks.sync": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sinxron"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sync"
+          }
+        }
+      }
+    },
+    "tracks.syncHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Müsbət dəyər altyazını gecikdirir, mənfi tezləşdirir."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A positive value delays the subtitles, a negative one advances them."
+          }
+        }
+      }
+    },
+    "tracks.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "az": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Treklər və altyazı"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tracks & subtitles"
           }
         }
       }

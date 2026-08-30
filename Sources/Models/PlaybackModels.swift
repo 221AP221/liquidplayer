@@ -14,6 +14,21 @@ struct PlaybackSnapshot: Equatable, Sendable {
     }
 }
 
+/// Altyazı və ya səs treki. Mühərrikdən asılı olmayan sadə təsvir —
+/// AVFoundation-da `AVMediaSelectionOption`, VLC-də tam indeks olur.
+struct MediaTrack: Identifiable, Hashable, Sendable {
+    let id: Int32
+    let name: String
+    /// Dil kodu (`az`, `en`) — varsa UI-da rozet kimi göstərilir.
+    let languageCode: String?
+
+    init(id: Int32, name: String, languageCode: String? = nil) {
+        self.id = id
+        self.name = name
+        self.languageCode = languageCode
+    }
+}
+
 enum RepeatMode: Int, CaseIterable, Sendable {
     case off, all, one
 }

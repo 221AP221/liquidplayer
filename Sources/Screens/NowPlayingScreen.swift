@@ -7,7 +7,7 @@ struct NowPlayingScreen: View {
     @State private var scrubFraction: Double?
 
     enum NowPlayingSheet: String, Identifiable {
-        case queue, lyrics
+        case queue, lyrics, tracks
         var id: String { rawValue }
     }
 
@@ -51,6 +51,7 @@ struct NowPlayingScreen: View {
             switch which {
             case .queue:  QueueSheet()
             case .lyrics: LyricsSheet()
+            case .tracks: TrackSelectorSheet()
             }
         }
     }
@@ -211,17 +212,47 @@ struct NowPlayingScreen: View {
         .padding(.top, Theme.Spacing.sm)
     }
 
+    /// Video və audio üçün alt sətir fərqlidir: videoda söz yerinə treklər,
+    /// AirPlay yerinə PiP daha çox işə yarayır.
     private var bottomBar: some View {
-        HStack(spacing: 0) {
-            Button { sheet = .lyrics } label: {
-                Image(systemName: "quote.bubble").frame(maxWidth: .infinity).hitTarget()
-            }
-            .buttonStyle(.plain)
+        let isVideo = player.current?.isVideo ?? false
 
-            Button {} label: {
-                Image(systemName: "airplayaudio").frame(maxWidth: .infinity).hitTarget()
+        return HStack(spacing: 0) {
+            if isVideo {
+                Button { sheet = .tracks } label: {
+                    Image(systemName: "captions.bubble")
+                        .foregroundStyle(player.canChooseTracks
+                                         ? Theme.Colors.textPrimary.opacity(0.8)
+                                         : Theme.Colors.textTertiary)
+                        .frame(maxWidth: .infinity)
+                        .hitTarget()
+                }
+                .buttonStyle(.plain)
+                .disabled(!player.canChooseTracks)
+            } else {
+                Button { sheet = .lyrics } label: {
+                    Image(systemName: "quote.bubble").frame(maxWidth: .infinity).hitTarget()
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
+
+            if isVideo && player.supportsPictureInPicture {
+                Button { player.togglePictureInPicture() } label: {
+                    Image(systemName: player.isPictureInPictureActive
+                          ? "pip.exit" : "pip.enter")
+                        .foregroundStyle(player.isPictureInPictureActive
+                                         ? Theme.Colors.accent
+                                         : Theme.Colors.textPrimary.opacity(0.8))
+                        .frame(maxWidth: .infinity)
+                        .hitTarget()
+                }
+                .buttonStyle(.plain)
+            } else {
+                Button {} label: {
+                    Image(systemName: "airplayaudio").frame(maxWidth: .infinity).hitTarget()
+                }
+                .buttonStyle(.plain)
+            }
 
             Button { sheet = .queue } label: {
                 Image(systemName: "list.bullet").frame(maxWidth: .infinity).hitTarget()

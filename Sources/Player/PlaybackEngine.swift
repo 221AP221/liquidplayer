@@ -11,6 +11,8 @@ protocol PlaybackEngine: AnyObject {
     var onFinished: (() -> Void)? { get set }
     /// Mühərrik səviyyəsində xəta.
     var onFailure: ((PlaybackError) -> Void)? { get set }
+    /// Altyazı/səs trekləri gec gəlir — siyahı hazır olanda çağırılır.
+    var onTracksChanged: (() -> Void)? { get set }
 
     func load(url: URL, startAtSeconds: Double) throws
     func play()
@@ -26,6 +28,55 @@ protocol PlaybackEngine: AnyObject {
     var supportsPictureInPicture: Bool { get }
     /// AirPlay-ə video göndərə bilirmi (yoxsa yalnız ekran güzgüsü).
     var supportsAirPlayVideo: Bool { get }
+
+    // MARK: - Treklər
+
+    var subtitleTracks: [MediaTrack] { get }
+    var audioTracks: [MediaTrack] { get }
+    var currentSubtitleTrackID: Int32? { get }
+    var currentAudioTrackID: Int32? { get }
+
+    /// `nil` — altyazını söndürür.
+    func selectSubtitle(id: Int32?)
+    func selectAudioTrack(id: Int32)
+
+    /// Xarici .srt/.ass faylı. Yalnız VLC dəstəkləyir.
+    var supportsExternalSubtitles: Bool { get }
+    func loadExternalSubtitle(url: URL)
+
+    /// Altyazı sinxronu. Yalnız VLC dəstəkləyir.
+    var supportsSubtitleDelay: Bool { get }
+    var subtitleDelay: Double { get set }
+
+    // MARK: - Picture-in-Picture
+
+    var isPictureInPictureActive: Bool { get }
+    func startPictureInPicture()
+    func stopPictureInPicture()
+}
+
+/// Mühərriklərin çoxu bu imkanların bir hissəsini dəstəkləmir —
+/// standart tətbiqlər onları səssizcə boş buraxır.
+extension PlaybackEngine {
+    var subtitleTracks: [MediaTrack] { [] }
+    var audioTracks: [MediaTrack] { [] }
+    var currentSubtitleTrackID: Int32? { nil }
+    var currentAudioTrackID: Int32? { nil }
+    func selectSubtitle(id: Int32?) {}
+    func selectAudioTrack(id: Int32) {}
+
+    var supportsExternalSubtitles: Bool { false }
+    func loadExternalSubtitle(url: URL) {}
+
+    var supportsSubtitleDelay: Bool { false }
+    var subtitleDelay: Double {
+        get { 0 }
+        set {}
+    }
+
+    var isPictureInPictureActive: Bool { false }
+    func startPictureInPicture() {}
+    func stopPictureInPicture() {}
 }
 
 /// Faylın hansı mühərriklə açılacağını təyin edir.

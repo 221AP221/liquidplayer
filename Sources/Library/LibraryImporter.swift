@@ -95,68 +95,88 @@ final class LibraryImporter {
         let ext = url.pathExtension.lowercased()
         let filename = url.lastPathComponent
         let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize).flatMap(Int64.init) ?? 0
-        let bookmark = try? url.bookmarkData(options: .minimalBookmark, includingResourceValuesForKeys: nil, relativeTo: nil)
+        let bookmark = try? url.bookmarkData(
+            options: .minimalBookmark,
+            includingResourceValuesForKeys: nil,
+            relativeTo: nil
+        )
 
-        var title = url.deletingPathExtension().lastPathComponent
+        let probe = await probeMetadata(at: url)
+
+        return MediaItem(
+            title: probe.title ?? url.deletingPathExtension().lastPathComponent,
+            artist: probe.artist,
+            album: probe.album,
+            kind: EngineRouter.kind(forFileExtension: ext),
+            engine: EngineRouter.engine(forFileExtension: ext),
+            filename: filename,
+            fileExtension: ext,
+            fileSize: size,
+            duration: probe.duration,
+            bookmark: bookmark,
+            artworkData: probe.artwork,
+            videoCodec: probe.codec,
+            pixelHeight: probe.pixelHeight
+        )
+    }
+
+    /// Faylın metadatası. Yalnız Sendable dəyərlər saxlayır.
+    struct Probe: Sendable {
+        var title: String?
         var artist: String?
         var album: String?
         var duration: Double = 0
         var artwork: Data?
         var pixelHeight: Int?
         var codec: String?
+    }
 
-        // AVFoundation MKV oxumur; belə fayllarda metadata VLC açılanda gəlir.
+    /// AVFoundation tipləri (`AVAsset`, `AVMetadataItem`, `AVAssetTrack`) Sendable deyil,
+    /// ona görə onlar bu `nonisolated` funksiyanın içindən çıxmır — bayıra yalnız
+    /// `Probe` gedir. Beləliklə metadata oxunması MainActor-u da bloklamır.
+    private nonisolated static func probeMetadata(at url: URL) async -> Probe {
+        var probe = Probe()
         let asset = AVURLAsset(url: url)
+
+        // AVFoundation MKV oxumur — belə fayllarda bu addım sadəcə boş qayıdır.
         if let seconds = try? await asset.load(.duration).seconds, seconds.isFinite {
-            duration = seconds
+            probe.duration = seconds
         }
+
         if let metadata = try? await asset.load(.commonMetadata) {
             for entry in metadata {
                 switch entry.commonKey {
                 case .commonKeyTitle:
                     // `try?` + optional dəyər iç-içə optional verir, ona görə düzləşdirilir.
                     if let value = (try? await entry.load(.stringValue)) ?? nil, !value.isEmpty {
-                        title = value
+                        probe.title = value
                     }
                 case .commonKeyArtist:
-                    artist = (try? await entry.load(.stringValue)) ?? nil
+                    probe.artist = (try? await entry.load(.stringValue)) ?? nil
                 case .commonKeyAlbumName:
-                    album = (try? await entry.load(.stringValue)) ?? nil
+                    probe.album = (try? await entry.load(.stringValue)) ?? nil
                 case .commonKeyArtwork:
-                    artwork = (try? await entry.load(.dataValue)) ?? nil
+                    probe.artwork = (try? await entry.load(.dataValue)) ?? nil
                 default:
                     break
                 }
             }
         }
+
         if let track = try? await asset.loadTracks(withMediaType: .video).first {
             if let size = try? await track.load(.naturalSize) {
-                pixelHeight = Int(abs(size.height))
+                probe.pixelHeight = Int(abs(size.height))
             }
             if let descriptions = try? await track.load(.formatDescriptions),
                let description = descriptions.first {
-                codec = fourCC(CMFormatDescriptionGetMediaSubType(description))
+                probe.codec = fourCC(CMFormatDescriptionGetMediaSubType(description))
             }
         }
 
-        return MediaItem(
-            title: title,
-            artist: artist,
-            album: album,
-            kind: EngineRouter.kind(forFileExtension: ext),
-            engine: EngineRouter.engine(forFileExtension: ext),
-            filename: filename,
-            fileExtension: ext,
-            fileSize: size,
-            duration: duration,
-            bookmark: bookmark,
-            artworkData: artwork,
-            videoCodec: codec,
-            pixelHeight: pixelHeight
-        )
+        return probe
     }
 
-    private static func fourCC(_ value: FourCharCode) -> String {
+    private nonisolated static func fourCC(_ value: FourCharCode) -> String {
         let bytes = [
             UInt8((value >> 24) & 0xFF),
             UInt8((value >> 16) & 0xFF),
