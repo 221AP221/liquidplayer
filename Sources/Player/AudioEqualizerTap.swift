@@ -100,13 +100,27 @@ final class AudioEqualizerTap: @unchecked Sendable {
             }
         )
 
-        var tap: MTAudioProcessingTap?
+        // iOS 26 SDK-da (Swift 6.2) çıxış parametri `MTAudioProcessingTap?` oldu;
+        // iOS 18 SDK-da hələ `Unmanaged<MTAudioProcessingTap>?`-dir.
+        #if compiler(>=6.2)
+        var createdTap: MTAudioProcessingTap?
         let status = MTAudioProcessingTapCreate(
             kCFAllocatorDefault,
             &callbacks,
             kMTAudioProcessingTapCreationFlag_PostEffects,
-            &tap
+            &createdTap
         )
+        let tap = createdTap
+        #else
+        var unmanagedTap: Unmanaged<MTAudioProcessingTap>?
+        let status = MTAudioProcessingTapCreate(
+            kCFAllocatorDefault,
+            &callbacks,
+            kMTAudioProcessingTapCreationFlag_PostEffects,
+            &unmanagedTap
+        )
+        let tap = unmanagedTap?.takeRetainedValue()
+        #endif
         guard status == noErr, let tap else {
             Unmanaged<AudioEqualizerTap>.fromOpaque(clientInfo).release()
             return nil
