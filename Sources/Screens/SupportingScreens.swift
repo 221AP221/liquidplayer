@@ -71,6 +71,7 @@ struct LyricsSheet: View {
 
 struct FoldersScreen: View {
     @Environment(\.libraryImportAction) private var importFolder
+    @Environment(\.libraryRefreshAction) private var refreshLibrary
     @Query(sort: \LibraryFolder.addedAt, order: .reverse) private var folders: [LibraryFolder]
 
     var body: some View {
@@ -91,7 +92,7 @@ struct FoldersScreen: View {
                             Text(folder.displayName)
                                 .font(.system(size: 16, weight: .medium))
                             Text(folder.hasAccess
-                                 ? String(format: String(localized: "folders.count"), folder.items.count)
+                                 ? String(format: String(localized: "folders.count"), folder.items.filter { !$0.isMissing }.count)
                                  : String(localized: "folders.noAccess"))
                                 .font(Theme.Text.caption)
                                 .foregroundStyle(folder.hasAccess ? Theme.Colors.textSecondary : Theme.Colors.rose)
@@ -122,6 +123,7 @@ struct FoldersScreen: View {
             .padding(.horizontal, Theme.Spacing.screenEdge)
             .padding(.bottom, 170)
         }
+        .refreshable { await refreshLibrary() }
         .background(LibraryBackdrop())
         .safeAreaInset(edge: .top) {
             HStack { Text("tab.folders").font(Theme.Text.largeTitle); Spacer() }
@@ -167,6 +169,7 @@ struct SearchScreen: View {
 
 struct SettingsScreen: View {
     @Environment(PlayerController.self) private var player
+    @State private var isEqualizerPresented = false
 
     var body: some View {
         NavigationStack {
@@ -181,6 +184,15 @@ struct SettingsScreen: View {
                         Text(String(format: "%.2gx", player.rate))
                             .foregroundStyle(Theme.Colors.textSecondary)
                     }
+                    Button {
+                        isEqualizerPresented = true
+                    } label: {
+                        LabeledContent("eq.title") {
+                            Text(equalizerSummary)
+                                .foregroundStyle(Theme.Colors.textSecondary)
+                        }
+                    }
+                    .foregroundStyle(Theme.Colors.textPrimary)
                 }
 
                 Section("settings.about") {
@@ -193,7 +205,14 @@ struct SettingsScreen: View {
             .background(LibraryBackdrop())
             .navigationTitle("tab.more")
             .safeAreaPadding(.bottom, 150)
+            .sheet(isPresented: $isEqualizerPresented) { EqualizerSheet() }
         }
+    }
+
+    private var equalizerSummary: String {
+        guard player.equalizer.isEnabled else { return String(localized: "eq.off") }
+        guard let preset = player.equalizer.preset else { return String(localized: "eq.custom") }
+        return String(localized: String.LocalizationValue(preset.titleKey))
     }
 }
 

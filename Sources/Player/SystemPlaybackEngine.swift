@@ -13,6 +13,9 @@ final class SystemPlaybackEngine: NSObject, PlaybackEngine {
 
     let supportsPictureInPicture = true
     let supportsAirPlayVideo = true
+    let supportsEqualizer = true
+
+    private(set) var chapters: [MediaChapter] = []
 
     private let player = AVPlayer()
     private var timeObserver: Any?
@@ -27,6 +30,14 @@ final class SystemPlaybackEngine: NSObject, PlaybackEngine {
     private var pipController: AVPictureInPictureController?
     private var playerLayerView: PlayerLayerView?
 
+    private var currentAsset: AVURLAsset?
+
+    /// Hər player item öz tap-ını alır: köhnə item-in `unprepare`-i yenisinin
+    /// filtrlərinə toxunmasın deyə.
+    private var equalizer: AudioEqualizerTap?
+    private var equalizerSettings = EqualizerSettings.flat
+    private weak var equalizedItem: AVPlayerItem?
+
     override init() {
         super.init()
         player.automaticallyWaitsToMinimizeStalling = true
@@ -39,6 +50,9 @@ final class SystemPlaybackEngine: NSObject, PlaybackEngine {
 
         legibleGroup = nil
         audibleGroup = nil
+        chapters = []
+        currentAsset = asset
+        equalizer = nil
 
         statusObservation = item.observe(\.status, options: [.new]) { [weak self] item, _ in
             guard item.status == .failed else { return }
@@ -62,6 +76,8 @@ final class SystemPlaybackEngine: NSObject, PlaybackEngine {
         }
 
         loadSelectionGroups(from: asset)
+        loadChapters(from: asset)
+        attachEqualizerIfNeeded()
     }
 
     func play() { player.play(); emitSnapshot() }
@@ -89,6 +105,9 @@ final class SystemPlaybackEngine: NSObject, PlaybackEngine {
         endObserver = nil
         pipController = nil
         playerLayerView = nil
+        currentAsset = nil
+        chapters = []
+        equalizer = nil
         player.replaceCurrentItem(with: nil)
     }
 
@@ -165,6 +184,66 @@ final class SystemPlaybackEngine: NSObject, PlaybackEngine {
               let index = group.options.firstIndex(of: option)
         else { return nil }
         return Int32(index)
+    }
+
+    // MARK: - Fəsillər
+
+    /// m4b və fəsilli mp4/m4a faylları. Başlıq yoxdursa boş qalır — UI nömrə göstərir.
+    private func loadChapters(from asset: AVURLAsset) {
+        Task { @MainActor [weak self] in
+            let groups = (try? await asset.loadChapterMetadataGroups(
+                bestMatchingPreferredLanguages: Locale.preferredLanguages
+            )) ?? []
+
+            var result: [MediaChapter] = []
+            for (index, group) in groups.enumerated() {
+                let start = group.timeRange.start.seconds
+                let duration = group.timeRange.duration.seconds
+                guard start.isFinite, duration.isFinite else { continue }
+
+                var title: String?
+                if let titleItem = AVMetadataItem.metadataItems(
+                    from: group.items,
+                    filteredByIdentifier: .commonIdentifierTitle
+                ).first {
+                    title = (try? await titleItem.load(.stringValue)) ?? nil
+                }
+                result.append(MediaChapter(id: index, title: title ?? "", start: start, duration: duration))
+            }
+
+            // Bu arada başqa fayl açılıbsa nəticə köhnədir.
+            guard let self, self.currentAsset === asset else { return }
+            self.chapters = result.sorted { $0.start < $1.start }
+            self.onTracksChanged?()
+        }
+    }
+
+    // MARK: - Ekvalayzer
+
+    func applyEqualizer(_ settings: EqualizerSettings) {
+        equalizerSettings = settings
+        equalizer?.update(settings: settings)
+        attachEqualizerIfNeeded()
+    }
+
+    /// Tap yalnız EQ açıq olanda qoşulur — söndürülmüş halda səs yolu toxunulmaz qalır.
+    /// Qoşulandan sonra söndürmək tap-ı çıxarmır, sadəcə keçid rejiminə salır.
+    private func attachEqualizerIfNeeded() {
+        guard equalizerSettings.isEnabled,
+              let item = player.currentItem,
+              item !== equalizedItem,
+              let asset = currentAsset
+        else { return }
+        equalizedItem = item
+
+        Task { @MainActor [weak self] in
+            guard let track = try? await asset.loadTracks(withMediaType: .audio).first else { return }
+            guard let self, self.player.currentItem === item else { return }
+            let tap = AudioEqualizerTap(settings: self.equalizerSettings)
+            guard let mix = tap.makeAudioMix(for: track) else { return }
+            self.equalizer = tap
+            item.audioMix = mix
+        }
     }
 
     // MARK: - Picture-in-Picture

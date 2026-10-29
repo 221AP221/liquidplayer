@@ -23,24 +23,43 @@ enum AppTab: Hashable, CaseIterable {
     }
 }
 
-/// Tab bar, mini-player və Now Playing bir-birinin üstündə dayanır.
+/// iPhone-da tab bar, mini-player və Now Playing bir-birinin üstündə dayanır.
+/// iPad-da (geniş en) tab bar yerinə yan panel açılır, mini-player detal sütununun altındadır.
 /// Naviqasiya yığını hər tabın öz içindədir.
 struct RootView: View {
     @Environment(PlayerController.self) private var player
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var tab: AppTab = .library
 
     var body: some View {
+        Group {
+            if horizontalSizeClass == .regular {
+                sidebarLayout
+            } else {
+                tabLayout
+            }
+        }
+        .preferredColorScheme(.dark)
+        .fullScreenCover(isPresented: Bindable(player).isExpanded) {
+            NowPlayingScreen()
+        }
+        .overlay(alignment: .bottom) {
+            if let notice = player.notice {
+                PlaybackNoticeSheet(notice: notice)
+                    .frame(maxWidth: 560)
+                    .transition(.move(edge: .bottom))
+            }
+        }
+        .animation(Theme.Motion.snap, value: player.notice)
+    }
+
+    // MARK: - iPhone
+
+    private var tabLayout: some View {
         ZStack(alignment: .bottom) {
             Theme.Colors.base.ignoresSafeArea()
 
-            Group {
-                switch tab {
-                case .library: LibraryScreen()
-                case .folders: FoldersScreen()
-                case .search:  SearchScreen()
-                case .more:    SettingsScreen()
-                }
-            }
+            screen(for: tab)
 
             VStack(spacing: Theme.Spacing.sm) {
                 if player.current != nil {
@@ -53,17 +72,58 @@ struct RootView: View {
             .padding(.bottom, Theme.Spacing.xs)
             .animation(Theme.Motion.snap, value: player.current?.id)
         }
-        .preferredColorScheme(.dark)
-        .fullScreenCover(isPresented: Bindable(player).isExpanded) {
-            NowPlayingScreen()
-        }
-        .overlay(alignment: .bottom) {
-            if let notice = player.notice {
-                PlaybackNoticeSheet(notice: notice)
-                    .transition(.move(edge: .bottom))
+    }
+
+    // MARK: - iPad
+
+    private var sidebarLayout: some View {
+        NavigationSplitView {
+            List(selection: sidebarSelection) {
+                ForEach(AppTab.allCases, id: \.self) { tab in
+                    Label(tab.titleKey, systemImage: tab.symbol)
+                        .tag(tab as AppTab?)
+                }
             }
+            .scrollContentBackground(.hidden)
+            .background(Theme.Colors.base)
+            .navigationTitle("app.name")
+        } detail: {
+            ZStack(alignment: .bottom) {
+                Theme.Colors.base.ignoresSafeArea()
+
+                screen(for: tab)
+
+                if player.current != nil {
+                    MiniPlayerBar()
+                        .frame(maxWidth: 560)
+                        .padding(.bottom, Theme.Spacing.md)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .animation(Theme.Motion.snap, value: player.current?.id)
         }
-        .animation(Theme.Motion.snap, value: player.notice)
+        .navigationSplitViewStyle(.balanced)
+        .tint(Theme.Colors.accent)
+    }
+
+    /// `List(selection:)` optional istəyir; yan paneldə seçimi boşaltmaq mənasızdır.
+    private var sidebarSelection: Binding<AppTab?> {
+        Binding(
+            get: { tab },
+            set: { newValue in
+                if let newValue { tab = newValue }
+            }
+        )
+    }
+
+    @ViewBuilder
+    private func screen(for tab: AppTab) -> some View {
+        switch tab {
+        case .library: LibraryScreen()
+        case .folders: FoldersScreen()
+        case .search:  SearchScreen()
+        case .more:    SettingsScreen()
+        }
     }
 }
 

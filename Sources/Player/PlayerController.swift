@@ -51,6 +51,29 @@ final class PlayerController {
     /// Video oynayırsa və mühərrik dəstəkləyirsə trek seçicisi açıla bilər.
     var canChooseTracks: Bool { !subtitleTracks.isEmpty || !audioTracks.isEmpty }
 
+    // MARK: - Fəsillər
+
+    private(set) var chapters: [MediaChapter] = []
+
+    /// `snapshot` saxlanan dəyərdir, ona görə bu hesablanan xassə də UI-ı yeniləyir.
+    var currentChapter: MediaChapter? {
+        chapters.last { $0.start <= snapshot.position + 0.25 }
+    }
+
+    // MARK: - Ekvalayzer
+
+    /// Bütün fayllar üçün bir dəyər; UserDefaults-da saxlanılır.
+    var equalizer: EqualizerSettings {
+        didSet {
+            guard equalizer != oldValue else { return }
+            engine?.applyEqualizer(equalizer)
+            Self.saveEqualizer(equalizer)
+        }
+    }
+
+    /// Hazırkı mühərrik EQ bacarırmı. Heç nə oynamırsa tənzimləmək yenə də olar.
+    var supportsEqualizer: Bool { engine?.supportsEqualizer ?? true }
+
     // MARK: - Daxili
 
     private var engine: PlaybackEngine?
@@ -59,6 +82,7 @@ final class PlayerController {
     private var progressSaveCounter = 0
 
     init() {
+        equalizer = Self.loadEqualizer()
         configureAudioSession()
         installRemoteCommands()
     }
@@ -99,6 +123,7 @@ final class PlayerController {
 
         do {
             try newEngine.load(url: url, startAtSeconds: item.progress * item.duration)
+            newEngine.applyEqualizer(equalizer)
             newEngine.setRate(rate)
             newEngine.play()
             isExpanded = true
@@ -125,6 +150,11 @@ final class PlayerController {
 
     func skip(bySeconds delta: Double) {
         engine?.seek(toSeconds: max(0, snapshot.position + delta))
+    }
+
+    func seek(toSeconds seconds: Double) {
+        let upperBound = snapshot.duration > 0 ? snapshot.duration : seconds
+        engine?.seek(toSeconds: min(upperBound, max(0, seconds)))
     }
 
     func next() {
@@ -165,6 +195,58 @@ final class PlayerController {
 
     func dismissNotice() { notice = nil }
 
+    // MARK: - Fəsil keçidi
+
+    func selectChapter(_ chapter: MediaChapter) {
+        seek(toSeconds: chapter.start)
+        if !snapshot.isPlaying { engine?.play() }
+    }
+
+    func nextChapter() {
+        guard let next = chapters.first(where: { $0.start > snapshot.position + 0.5 }) else { return }
+        selectChapter(next)
+    }
+
+    /// Fəslin ilk 3 saniyəsindəyiksə əvvəlki fəslə, yoxsa hazırkının əvvəlinə — treklərdəki kimi.
+    func previousChapter() {
+        guard let current = currentChapter,
+              let index = chapters.firstIndex(of: current)
+        else { return }
+        if snapshot.position - current.start > 3 || index == 0 {
+            selectChapter(current)
+        } else {
+            selectChapter(chapters[index - 1])
+        }
+    }
+
+    // MARK: - Əlfəcinlər
+
+    /// Hazırkı mövqedə əlfəcin yaradır. Qeyd boşdursa fəsil adı yazılır.
+    @discardableResult
+    func addBookmark(note: String = "") -> Bookmark? {
+        guard let item = current else { return nil }
+        let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        let bookmark = Bookmark(
+            position: snapshot.position,
+            note: trimmed.isEmpty ? (currentChapter?.title ?? "") : trimmed
+        )
+        context?.insert(bookmark)
+        bookmark.item = item
+        try? context?.save()
+        return bookmark
+    }
+
+    func jump(to bookmark: Bookmark) {
+        guard bookmark.item?.id == current?.id else { return }
+        seek(toSeconds: bookmark.position)
+        if !snapshot.isPlaying { engine?.play() }
+    }
+
+    func deleteBookmark(_ bookmark: Bookmark) {
+        context?.delete(bookmark)
+        try? context?.save()
+    }
+
     // MARK: - Trek seçimi
 
     func selectSubtitle(id: Int32?) {
@@ -198,6 +280,7 @@ final class PlayerController {
         currentSubtitleTrackID = engine?.currentSubtitleTrackID
         currentAudioTrackID = engine?.currentAudioTrackID
         subtitleDelay = engine?.subtitleDelay ?? 0
+        chapters = (engine?.chapters ?? []).sorted { $0.start < $1.start }
     }
 
     // MARK: - Picture-in-Picture
@@ -244,6 +327,7 @@ final class PlayerController {
         currentSubtitleTrackID = nil
         currentAudioTrackID = nil
         subtitleDelay = 0
+        chapters = []
         isPictureInPictureActive = false
         engine?.teardown()
         engine = nil
@@ -282,6 +366,22 @@ final class PlayerController {
         item.progress = snapshot.fraction
         if item.duration == 0 { item.duration = snapshot.duration }
         try? context?.save()
+    }
+
+    // MARK: - EQ yaddaşı
+
+    private static let equalizerDefaultsKey = "equalizer.settings"
+
+    private static func loadEqualizer() -> EqualizerSettings {
+        guard let data = UserDefaults.standard.data(forKey: equalizerDefaultsKey),
+              let settings = try? JSONDecoder().decode(EqualizerSettings.self, from: data)
+        else { return .flat }
+        return settings.normalized()
+    }
+
+    private static func saveEqualizer(_ settings: EqualizerSettings) {
+        guard let data = try? JSONEncoder().encode(settings) else { return }
+        UserDefaults.standard.set(data, forKey: equalizerDefaultsKey)
     }
 
     // MARK: - Sistem inteqrasiyası

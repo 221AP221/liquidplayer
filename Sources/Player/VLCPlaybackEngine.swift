@@ -20,6 +20,7 @@ final class VLCPlaybackEngine: NSObject, PlaybackEngine {
     let supportsAirPlayVideo = false
     let supportsExternalSubtitles = true
     let supportsSubtitleDelay = true
+    let supportsEqualizer = true
 
     private let player = VLCMediaPlayer()
     private lazy var renderView: UIView = {
@@ -125,6 +126,36 @@ final class VLCPlaybackEngine: NSObject, PlaybackEngine {
     var subtitleDelay: Double {
         get { Double(player.currentVideoSubTitleDelay) / 1_000_000 }
         set { player.currentVideoSubTitleDelay = Int(newValue * 1_000_000) }
+    }
+
+    // MARK: - Fəsillər
+
+    /// VLC fəsilləri `[[String: Any]]` lüğətləri kimi verir; vaxtlar millisaniyədir.
+    var chapters: [MediaChapter] {
+        let descriptions = player.chapterDescriptions(ofTitle: player.currentTitleIndex) as? [[String: Any]] ?? []
+        return descriptions.enumerated().compactMap { index, entry in
+            guard let offset = (entry[VLCChapterDescriptionTimeOffset] as? NSNumber)?.doubleValue,
+                  let length = (entry[VLCChapterDescriptionDuration] as? NSNumber)?.doubleValue
+            else { return nil }
+            return MediaChapter(
+                id: index,
+                title: (entry[VLCChapterDescriptionName] as? String) ?? "",
+                start: offset / 1000,
+                duration: length / 1000
+            )
+        }
+    }
+
+    // MARK: - Ekvalayzer
+
+    /// VLC-nin 10 zolağı (60 Hz ... 16 kHz) bizim zolaqlarla indeks üzrə üst-üstə düşür.
+    func applyEqualizer(_ settings: EqualizerSettings) {
+        player.equalizerEnabled = settings.isEnabled
+        guard settings.isEnabled else { return }
+        let bandCount = Int(player.numberOfBands)
+        for (index, gain) in settings.gains.enumerated() where index < bandCount {
+            player.setAmplification(CGFloat(gain), forBand: UInt32(index))
+        }
     }
 
     // MARK: - Detallar

@@ -11,7 +11,7 @@ protocol PlaybackEngine: AnyObject {
     var onFinished: (() -> Void)? { get set }
     /// Mühərrik səviyyəsində xəta.
     var onFailure: ((PlaybackError) -> Void)? { get set }
-    /// Altyazı/səs trekləri gec gəlir — siyahı hazır olanda çağırılır.
+    /// Altyazı/səs trekləri və fəsillər gec gəlir — siyahı hazır olanda çağırılır.
     var onTracksChanged: (() -> Void)? { get set }
 
     func load(url: URL, startAtSeconds: Double) throws
@@ -48,6 +48,16 @@ protocol PlaybackEngine: AnyObject {
     var supportsSubtitleDelay: Bool { get }
     var subtitleDelay: Double { get set }
 
+    // MARK: - Fəsillər
+
+    /// Başlanğıc vaxtına görə sıralanıb. Fəsilsiz fayllarda boşdur.
+    var chapters: [MediaChapter] { get }
+
+    // MARK: - Ekvalayzer
+
+    var supportsEqualizer: Bool { get }
+    func applyEqualizer(_ settings: EqualizerSettings)
+
     // MARK: - Picture-in-Picture
 
     var isPictureInPictureActive: Bool { get }
@@ -73,6 +83,11 @@ extension PlaybackEngine {
         get { 0 }
         set {}
     }
+
+    var chapters: [MediaChapter] { [] }
+
+    var supportsEqualizer: Bool { false }
+    func applyEqualizer(_ settings: EqualizerSettings) {}
 
     var isPictureInPictureActive: Bool { false }
     func startPictureInPicture() {}

@@ -87,12 +87,32 @@ trek vərəqəsində isə nəyin itdiyi açıq yazılır.
 **Tərəqqi tez-tez yazılmır.** `PlayerController` hər ~2 saniyədə bir SwiftData-ya yazır,
 trek dəyişəndə isə məcburi. Böyük kitabxanada bu fərq hiss olunur.
 
+**Fəsillər və əlfəcinlər.** AVFoundation fəsilləri `loadChapterMetadataGroups` ilə
+(m4b, fəsilli m4a/mp4), VLC isə `chapterDescriptions` ilə verir — hər ikisi `MediaChapter`
+olur və trek siyahısı kimi `onTracksChanged` ilə gəlir. Now Playing-də fəsil zolağı,
+scrubber üzərində fəsil sərhədləri və fəsil/əlfəcin vərəqəsi var. `Bookmark` SwiftData
+modelidir, `MediaItem`-ə bağlıdır və fayl itəndə də qalır.
+
+**Ekvalayzer səs yolunu dəyişmir.** `AVPlayer` `AVAudioEngine` qəbul etmədiyi üçün EQ
+`MTAudioProcessingTap` + vDSP biquad filtrləri ilə qurulub (`AudioEqualizerTap`) — aparat
+dekoderi, PiP və AirPlay qalır. Tap yalnız EQ açılanda qoşulur; real-time axında yaddaş
+ayrılmır, kilid yalnız `trylock` ilə götürülür. VLC-də onun öz 10 zolaqlı EQ-su işləyir.
+Tənzimləmə bütün fayllar üçün birdir və `UserDefaults`-da saxlanılır.
+
+**Kitabxana özü yenilənir.** App açılanda, ön plana qayıdanda (ən çox dəqiqədə bir) və
+pull-to-refresh ilə bütün qovluqlar yenidən taranır. Fayllar qovluğa nisbi yolla
+(`relativePath`) tanınır; metadata yalnız yeni fayllar üçün oxunur, ona görə dəyişməyən
+böyük qovluğun yenilənməsi ucuzdur. Silinən fayl `isMissing` olur, qayıdanda geri açılır.
+Eyni qovluğu ikinci dəfə əlavə etmək dublikat yaratmır.
+
+**iPad.** Geniş endə (`horizontalSizeClass == .regular`) tab bar yerinə
+`NavigationSplitView` yan paneli açılır, kitabxana şəbəkəsi enə görə sütun artırır.
+
 ## Nə hazır deyil
 
-- Səsli kitab fəsilləri, əlfəcinlər
-- Ekvalayzer (`AVAudioEngine` və ya VLC-nin öz EQ-su)
-- iPad sidebar layoutu
-- Kitabxananın fon yenilənməsi (qovluğa yeni fayl düşəndə)
+- Faylın qovluq içində yerini dəyişməsi yeni element kimi görünür (köhnəsi `isMissing` olur)
+- Əlfəcin qeydini sonradan redaktə etmək
+- EQ-nun VLC zolaqları (60 Hz…16 kHz) bizimkilərlə indeks üzrə uyğunlaşdırılır, tezlik üzrə yox
 
 ## Bilinən texniki qeydlər
 

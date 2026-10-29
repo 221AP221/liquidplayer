@@ -29,6 +29,9 @@ final class MediaItem {
 
     /// Faylın adı — üz qabığı yoxdursa rəng bundan qurulur.
     var filename: String
+    /// Qovluğun kökünə nisbətən yol (`Albom/01.mp3`). Yenidən taramada faylı
+    /// tanımaq üçündür. Köhnə elementlərdə `nil` ola bilər — onda `filename` işlədilir.
+    var relativePath: String?
     var fileExtension: String
     var fileSize: Int64
     var duration: Double
@@ -54,6 +57,8 @@ final class MediaItem {
 
     @Relationship(inverse: \LibraryFolder.items) var folder: LibraryFolder?
 
+    @Relationship(deleteRule: .cascade) var bookmarks: [Bookmark] = []
+
     init(
         id: UUID = UUID(),
         title: String,
@@ -62,6 +67,7 @@ final class MediaItem {
         kind: MediaKind,
         engine: EngineKind,
         filename: String,
+        relativePath: String? = nil,
         fileExtension: String,
         fileSize: Int64 = 0,
         duration: Double = 0,
@@ -78,6 +84,7 @@ final class MediaItem {
         self.kindRaw = kind.rawValue
         self.engineRaw = engine.rawValue
         self.filename = filename
+        self.relativePath = relativePath
         self.fileExtension = fileExtension
         self.fileSize = fileSize
         self.duration = duration
@@ -109,4 +116,9 @@ final class MediaItem {
     var isResumable: Bool { progress > 0.02 && progress < 0.98 }
 
     var remainingSeconds: Double { max(0, duration * (1 - progress)) }
+
+    /// Yenidən taramada faylı tanıyan açar.
+    var libraryKey: String { relativePath ?? filename }
+
+    var sortedBookmarks: [Bookmark] { bookmarks.sorted { $0.position < $1.position } }
 }

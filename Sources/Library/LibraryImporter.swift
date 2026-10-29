@@ -3,7 +3,7 @@ import Foundation
 import Observation
 import SwiftData
 
-/// Qovluğu tarayıb SwiftData-ya yazır. Fayllar köçürülmür.
+/// Qovluğu tarayıb SwiftData-ya yazır və sonradan yeniləyir. Fayllar köçürülmür.
 ///
 /// Ağır iş (metadata oxunması) arxa planda gedir, yazma isə model context-in
 /// aktorunda — ona görə tarama iki mərhələlidir: əvvəl disk, sonra baza.
@@ -20,6 +20,9 @@ final class LibraryImporter {
     }
 
     private(set) var progress = Progress()
+    /// Fon yenilənməsi gedirmi. Eyni anda ikinci tarama başlamır.
+    private(set) var isRefreshing = false
+    private var lastRefreshAt: Date?
     private let context: ModelContext
 
     init(context: ModelContext) {
@@ -27,6 +30,7 @@ final class LibraryImporter {
     }
 
     /// İstifadəçi Files-dan qovluq seçəndən sonra çağırılır.
+    /// Eyni qovluq artıq kitabxanadadırsa ikinci nüsxə yaranmır — sadəcə yenidən taranır.
     func importFolder(at url: URL) async throws {
         guard url.startAccessingSecurityScopedResource() else {
             throw PlaybackError.accessDenied
@@ -38,23 +42,128 @@ final class LibraryImporter {
             includingResourceValuesForKeys: nil,
             relativeTo: nil
         )
-        let folder = LibraryFolder(displayName: url.lastPathComponent, bookmark: folderBookmark)
-        context.insert(folder)
 
-        let candidates = Self.scanFiles(in: url)
-        progress = Progress(processed: 0, total: candidates.count, currentFilename: "", unsupported: 0)
+        let folder: LibraryFolder
+        if let existing = existingFolder(at: url) {
+            folder = existing
+            folder.bookmark = folderBookmark
+            folder.hasAccess = true
+        } else {
+            folder = LibraryFolder(displayName: url.lastPathComponent, bookmark: folderBookmark)
+            context.insert(folder)
+        }
+
+        await sync(folder, rootURL: url)
+        try context.save()
+    }
+
+    /// Bütün qovluqları yenidən tarayır: yeni faylları əlavə edir, silinənləri
+    /// `isMissing` işarələyir (oxunmuş yer və əlfəcinlər qalır), qayıdanları geri açır.
+    ///
+    /// App açılanda və ön plana qayıdanda çağırılır. `minimumInterval` tez-tez
+    /// tətbiq dəyişdirəndə diskin boş yerə gəzilməməsi üçündür.
+    func refreshAllFolders(minimumInterval: TimeInterval = 0) async {
+        guard !isRefreshing else { return }
+        if let lastRefreshAt, Date.now.timeIntervalSince(lastRefreshAt) < minimumInterval { return }
+
+        isRefreshing = true
+        defer {
+            isRefreshing = false
+            lastRefreshAt = .now
+        }
+
+        let folders = (try? context.fetch(FetchDescriptor<LibraryFolder>())) ?? []
+        for folder in folders {
+            await refresh(folder)
+        }
+        try? context.save()
+    }
+
+    // MARK: - Tarama
+
+    private func refresh(_ folder: LibraryFolder) async {
+        var isStale = false
+        guard let url = try? URL(
+            resolvingBookmarkData: folder.bookmark,
+            options: [],
+            relativeTo: nil,
+            bookmarkDataIsStale: &isStale
+        ), url.startAccessingSecurityScopedResource() else {
+            markInaccessible(folder)
+            return
+        }
+        defer { url.stopAccessingSecurityScopedResource() }
+
+        // Bookmark silinmiş qovluğa da həll oluna bilər — yolun özünü yoxlayırıq.
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
+              isDirectory.boolValue
+        else {
+            markInaccessible(folder)
+            return
+        }
+
+        if isStale, let refreshed = try? url.bookmarkData(
+            options: .minimalBookmark,
+            includingResourceValuesForKeys: nil,
+            relativeTo: nil
+        ) {
+            folder.bookmark = refreshed
+        }
+        folder.hasAccess = true
+        await sync(folder, rootURL: url)
+    }
+
+    /// İcazə itəndə fayllar gizlənir, amma silinmir — qovluq qayıdanda hər şey yerinə düşür.
+    private func markInaccessible(_ folder: LibraryFolder) {
+        folder.hasAccess = false
+        for item in folder.items { item.isMissing = true }
+    }
+
+    /// Diskdəki vəziyyəti bazaya köçürür. Metadata yalnız yeni fayllar üçün oxunur,
+    /// ona görə dəyişməyən böyük qovluğun yenilənməsi ucuzdur.
+    private func sync(_ folder: LibraryFolder, rootURL: URL) async {
+        let candidates = await Task.detached(priority: .utility) {
+            Self.scanFiles(in: rootURL)
+        }.value
+
+        var byKey: [String: MediaItem] = [:]
+        for item in folder.items { byKey[item.libraryKey] = item }
+
+        var seen = Set<UUID>()
+        var newFiles: [(url: URL, relativePath: String)] = []
+        var unsupported = 0
 
         for fileURL in candidates {
-            progress.currentFilename = fileURL.lastPathComponent
-
-            let ext = fileURL.pathExtension.lowercased()
-            guard EngineRouter.isSupported(fileExtension: ext) else {
-                progress.unsupported += 1
-                progress.processed += 1
+            guard EngineRouter.isSupported(fileExtension: fileURL.pathExtension) else {
+                unsupported += 1
                 continue
             }
+            let relative = Self.relativePath(of: fileURL, in: rootURL)
 
-            if let item = await Self.makeItem(from: fileURL) {
+            // Köhnə elementlərdə nisbi yol yoxdur — onları fayl adı ilə tanıyırıq.
+            let legacy = byKey[fileURL.lastPathComponent].flatMap { $0.relativePath == nil ? $0 : nil }
+            if let item = byKey[relative] ?? legacy, !seen.contains(item.id) {
+                if item.relativePath == nil { item.relativePath = relative }
+                if item.isMissing || item.bookmark == nil {
+                    item.bookmark = Self.bookmark(for: fileURL) ?? item.bookmark
+                }
+                item.isMissing = false
+                seen.insert(item.id)
+            } else {
+                newFiles.append((fileURL, relative))
+            }
+        }
+
+        for item in folder.items where !seen.contains(item.id) {
+            item.isMissing = true
+        }
+
+        progress = Progress(processed: 0, total: newFiles.count, currentFilename: "", unsupported: unsupported)
+
+        for file in newFiles {
+            progress.currentFilename = file.url.lastPathComponent
+            if let item = await Self.makeItem(from: file.url, relativePath: file.relativePath) {
                 item.folder = folder
                 context.insert(item)
             }
@@ -66,11 +175,26 @@ final class LibraryImporter {
 
         folder.lastScannedAt = .now
         progress.isFinished = true
-        try context.save()
     }
 
-    /// Qovluğu rekursiv gəzir, gizli faylları atır.
-    private static func scanFiles(in root: URL) -> [URL] {
+    /// Eyni yola baxan qovluq artıq varmı.
+    private func existingFolder(at url: URL) -> LibraryFolder? {
+        let target = url.standardizedFileURL.resolvingSymlinksInPath().path
+        let folders = (try? context.fetch(FetchDescriptor<LibraryFolder>())) ?? []
+        return folders.first { folder in
+            var isStale = false
+            guard let resolved = try? URL(
+                resolvingBookmarkData: folder.bookmark,
+                options: [],
+                relativeTo: nil,
+                bookmarkDataIsStale: &isStale
+            ) else { return false }
+            return resolved.standardizedFileURL.resolvingSymlinksInPath().path == target
+        }
+    }
+
+    /// Qovluğu rekursiv gəzir, gizli faylları atır. Disk işidir, MainActor-dan kənarda gedir.
+    private nonisolated static func scanFiles(in root: URL) -> [URL] {
         let keys: [URLResourceKey] = [.isRegularFileKey, .fileSizeKey]
         guard let enumerator = FileManager.default.enumerator(
             at: root,
@@ -88,18 +212,31 @@ final class LibraryImporter {
         return results
     }
 
-    /// Bir faylın metadatasını oxuyur. Oxuna bilməsə də element yaradılır —
-    /// fayl adı başlıq kimi işlədilir, çünki oxunmayan metadata faylı kitabxanadan
-    /// silmək üçün səbəb deyil.
-    private static func makeItem(from url: URL) async -> MediaItem? {
-        let ext = url.pathExtension.lowercased()
-        let filename = url.lastPathComponent
-        let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize).flatMap(Int64.init) ?? 0
-        let bookmark = try? url.bookmarkData(
+    /// `/…/Musiqi/Albom/01.mp3` → `Albom/01.mp3`.
+    private nonisolated static func relativePath(of file: URL, in root: URL) -> String {
+        let rootPath = root.standardizedFileURL.resolvingSymlinksInPath().path
+        let filePath = file.standardizedFileURL.resolvingSymlinksInPath().path
+        let prefix = rootPath.hasSuffix("/") ? rootPath : rootPath + "/"
+        guard filePath.hasPrefix(prefix) else { return file.lastPathComponent }
+        return String(filePath.dropFirst(prefix.count))
+    }
+
+    private static func bookmark(for url: URL) -> Data? {
+        try? url.bookmarkData(
             options: .minimalBookmark,
             includingResourceValuesForKeys: nil,
             relativeTo: nil
         )
+    }
+
+    /// Bir faylın metadatasını oxuyur. Oxuna bilməsə də element yaradılır —
+    /// fayl adı başlıq kimi işlədilir, çünki oxunmayan metadata faylı kitabxanadan
+    /// silmək üçün səbəb deyil.
+    private static func makeItem(from url: URL, relativePath: String) async -> MediaItem? {
+        let ext = url.pathExtension.lowercased()
+        let filename = url.lastPathComponent
+        let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize).flatMap(Int64.init) ?? 0
+        let bookmark = Self.bookmark(for: url)
 
         let probe = await probeMetadata(at: url)
 
@@ -110,6 +247,7 @@ final class LibraryImporter {
             kind: EngineRouter.kind(forFileExtension: ext),
             engine: EngineRouter.engine(forFileExtension: ext),
             filename: filename,
+            relativePath: relativePath,
             fileExtension: ext,
             fileSize: size,
             duration: probe.duration,

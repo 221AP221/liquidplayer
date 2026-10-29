@@ -7,7 +7,7 @@ struct NowPlayingScreen: View {
     @State private var scrubFraction: Double?
 
     enum NowPlayingSheet: String, Identifiable {
-        case queue, lyrics, tracks
+        case queue, lyrics, tracks, chapters, equalizer
         var id: String { rawValue }
     }
 
@@ -38,6 +38,7 @@ struct NowPlayingScreen: View {
                     }
 
                     titleBlock(item)
+                    if !player.chapters.isEmpty { chapterBar }
                     scrubber
                     transport
                     Spacer(minLength: Theme.Spacing.md)
@@ -52,6 +53,8 @@ struct NowPlayingScreen: View {
             case .queue:  QueueSheet()
             case .lyrics: LyricsSheet()
             case .tracks: TrackSelectorSheet()
+            case .chapters: ChaptersSheet()
+            case .equalizer: EqualizerSheet()
             }
         }
     }
@@ -83,6 +86,13 @@ struct NowPlayingScreen: View {
             Spacer()
 
             Menu {
+                Button("bookmarks.addHere", systemImage: "bookmark") {
+                    _ = player.addBookmark()
+                }
+                Button("eq.title", systemImage: "slider.vertical.3") {
+                    sheet = .equalizer
+                }
+                Divider()
                 Button("menu.showInFolder", systemImage: "folder") {}
                 Button("menu.fileInfo", systemImage: "info.circle") {}
             } label: {
@@ -129,6 +139,7 @@ struct NowPlayingScreen: View {
                     Capsule()
                         .fill(Theme.Colors.accent)
                         .frame(width: geometry.size.width * fraction)
+                    chapterTicks(width: geometry.size.width)
                     Circle()
                         .fill(.white)
                         .frame(width: 14, height: 14)
@@ -159,6 +170,65 @@ struct NowPlayingScreen: View {
             .foregroundStyle(Theme.Colors.textSecondary)
         }
         .padding(.top, Theme.Spacing.lg)
+    }
+
+    /// Fəsilli fayllarda: hazırkı fəslin adı və fəsillər arası keçid.
+    private var chapterBar: some View {
+        HStack(spacing: Theme.Spacing.xs) {
+            Button { player.previousChapter() } label: {
+                Image(systemName: "backward.end.fill").hitTarget(38)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("chapters.previous"))
+
+            Button { sheet = .chapters } label: {
+                HStack(spacing: Theme.Spacing.xs) {
+                    Image(systemName: "list.bullet.indent")
+                        .font(.system(size: 12, weight: .semibold))
+                    Text(currentChapterTitle)
+                        .font(.system(size: 14, weight: .semibold))
+                        .lineLimit(1)
+                }
+                .foregroundStyle(Theme.Colors.textPrimary.opacity(0.85))
+                .frame(maxWidth: .infinity, minHeight: 38)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            Button { player.nextChapter() } label: {
+                Image(systemName: "forward.end.fill").hitTarget(38)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("chapters.next"))
+        }
+        .font(.system(size: 14))
+        .foregroundStyle(Theme.Colors.textPrimary.opacity(0.8))
+        .padding(.horizontal, Theme.Spacing.xs)
+        .glassCard(cornerRadius: 19)
+        .padding(.top, Theme.Spacing.md)
+    }
+
+    private var currentChapterTitle: String {
+        guard let chapter = player.currentChapter else { return String(localized: "chapters.title") }
+        let number = chapter.id + 1
+        let title = chapter.title.isEmpty
+            ? String(format: String(localized: "chapters.numbered"), number)
+            : chapter.title
+        return "\(number)/\(player.chapters.count) · \(title)"
+    }
+
+    /// Scrubber üzərində fəsil sərhədləri.
+    @ViewBuilder
+    private func chapterTicks(width: CGFloat) -> some View {
+        let duration = player.snapshot.duration
+        if duration > 0 {
+            ForEach(player.chapters.dropFirst()) { chapter in
+                Rectangle()
+                    .fill(Theme.Colors.base.opacity(0.8))
+                    .frame(width: 2, height: 6)
+                    .offset(x: width * min(1, chapter.start / duration) - 1)
+            }
+        }
     }
 
     private var transport: some View {
@@ -253,6 +323,13 @@ struct NowPlayingScreen: View {
                 }
                 .buttonStyle(.plain)
             }
+
+            Button { sheet = .chapters } label: {
+                Image(systemName: player.chapters.isEmpty ? "bookmark" : "list.bullet.indent")
+                    .frame(maxWidth: .infinity)
+                    .hitTarget()
+            }
+            .buttonStyle(.plain)
 
             Button { sheet = .queue } label: {
                 Image(systemName: "list.bullet").frame(maxWidth: .infinity).hitTarget()

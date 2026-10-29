@@ -29,6 +29,20 @@ struct MediaTrack: Identifiable, Hashable, Sendable {
     }
 }
 
+/// Fəsil. AVFoundation-da `AVTimedMetadataGroup`, VLC-də fəsil təsviri olur.
+struct MediaChapter: Identifiable, Hashable, Sendable {
+    let id: Int
+    let title: String
+    let start: Double       // saniyə
+    let duration: Double    // saniyə
+
+    var end: Double { start + duration }
+
+    func contains(_ seconds: Double) -> Bool {
+        seconds >= start && seconds < end
+    }
+}
+
 enum RepeatMode: Int, CaseIterable, Sendable {
     case off, all, one
 }

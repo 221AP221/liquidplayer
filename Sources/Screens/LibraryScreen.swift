@@ -3,6 +3,7 @@ import SwiftUI
 
 struct LibraryScreen: View {
     @Environment(PlayerController.self) private var player
+    @Environment(\.libraryRefreshAction) private var refreshLibrary
     @Query(sort: \MediaItem.addedAt, order: .reverse) private var allItems: [MediaItem]
     @State private var filter: MediaKind?
 
@@ -40,8 +41,8 @@ struct LibraryScreen: View {
 
                     VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
                         SectionHeader(title: "section.recent")
-                        LazyVGrid(columns: [GridItem(.flexible(), spacing: Theme.Spacing.md),
-                                            GridItem(.flexible())],
+                        // iPhone-da 2 sütun, iPad-da en imkan verdikcə çox.
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: Theme.Spacing.md)],
                                   spacing: Theme.Spacing.md) {
                             ForEach(gridItems) { item in
                                 MediaCard(item: item) { play(item) }
@@ -54,6 +55,7 @@ struct LibraryScreen: View {
             .padding(.bottom, 170)
         }
         .scrollIndicators(.hidden)
+        .refreshable { await refreshLibrary() }
         .background(LibraryBackdrop())
         .safeAreaInset(edge: .top, spacing: 0) {
             HStack {
