@@ -7,7 +7,11 @@ struct LibraryScreen: View {
     @Query(sort: \MediaItem.addedAt, order: .reverse) private var allItems: [MediaItem]
     @State private var filter: MediaKind?
 
-    private let filters: [MediaKind?] = [nil, .audio, .video]
+    /// Səsli kitab çipi yalnız kitabxanada səsli kitab olanda görünür.
+    private var filters: [MediaKind?] {
+        let hasAudiobooks = allItems.contains { $0.kind == .audiobook && !$0.isMissing }
+        return hasAudiobooks ? [nil, .audio, .audiobook, .video] : [nil, .audio, .video]
+    }
 
     var body: some View {
         ScrollView {
@@ -18,9 +22,9 @@ struct LibraryScreen: View {
                     label: { kind in
                         switch kind {
                         case .none:   String(localized: "filter.all")
-                        case .audio?: String(localized: "filter.audio")
-                        case .video?: String(localized: "filter.video")
-                        default:      ""
+                        case .audio?:     String(localized: "filter.audio")
+                        case .audiobook?: String(localized: "filter.audiobook")
+                        case .video?:     String(localized: "filter.video")
                         }
                     },
                     selection: $filter
@@ -35,17 +39,30 @@ struct LibraryScreen: View {
                             SectionHeader(title: "section.continue")
                             ForEach(resumable) { item in
                                 MediaRow(item: item) { play(item) }
+                                    .mediaContextMenu(item)
+                            }
+                        }
+                    }
+
+                    if !favorites.isEmpty {
+                        VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
+                            SectionHeader(title: "section.favorites")
+                            ForEach(favorites) { item in
+                                MediaRow(item: item) { player.play(item, queue: favorites) }
+                                    .mediaContextMenu(item)
                             }
                         }
                     }
 
                     VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
-                        SectionHeader(title: "section.recent")
+                        SectionHeader(title: "section.all")
                         // iPhone-da 2 sütun, iPad-da en imkan verdikcə çox.
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: Theme.Spacing.md)],
                                   spacing: Theme.Spacing.md) {
-                            ForEach(gridItems) { item in
+                            // LazyVGrid yalnız görünən kartları qurur — böyük kitabxanada da limit lazım deyil.
+                            ForEach(visibleItems) { item in
                                 MediaCard(item: item) { play(item) }
+                                    .mediaContextMenu(item)
                             }
                         }
                     }
@@ -77,12 +94,42 @@ struct LibraryScreen: View {
         Array(visibleItems.filter(\.isResumable).prefix(4))
     }
 
-    private var gridItems: [MediaItem] {
-        Array(visibleItems.prefix(12))
+    private var favorites: [MediaItem] {
+        visibleItems.filter(\.isFavorite)
     }
 
     private func play(_ item: MediaItem) {
         player.play(item, queue: visibleItems)
+    }
+}
+
+/// Kitabxana sətirləri və kartları üçün ortaq menyu.
+private struct MediaContextMenu: ViewModifier {
+    @Environment(PlayerController.self) private var player
+    let item: MediaItem
+
+    func body(content: Content) -> some View {
+        content.contextMenu {
+            Button("queue.playNext", systemImage: "text.line.first.and.arrowtriangle.forward") {
+                player.playNext(item)
+            }
+            Button("queue.add", systemImage: "text.badge.plus") {
+                player.enqueue(item)
+            }
+            Divider()
+            Button(
+                item.isFavorite ? LocalizedStringKey("favorites.remove") : LocalizedStringKey("favorites.add"),
+                systemImage: item.isFavorite ? "heart.slash" : "heart"
+            ) {
+                item.isFavorite.toggle()
+            }
+        }
+    }
+}
+
+extension View {
+    func mediaContextMenu(_ item: MediaItem) -> some View {
+        modifier(MediaContextMenu(item: item))
     }
 }
 

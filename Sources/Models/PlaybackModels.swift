@@ -47,6 +47,36 @@ enum RepeatMode: Int, CaseIterable, Sendable {
     case off, all, one
 }
 
+/// Yuxu taymerinin işlək vəziyyəti.
+enum SleepTimer: Equatable, Sendable {
+    /// Bu anda dayan.
+    case at(Date)
+    /// Bu fəsil bitəndə dayan.
+    case endOfChapter(chapterID: Int)
+    /// Fayl bitəndə dayan, növbətiyə keçmə.
+    case endOfItem
+}
+
+/// UI-da təklif olunan yuxu taymeri seçimləri.
+enum SleepTimerOption: Hashable, Identifiable, Sendable {
+    case minutes(Int)
+    case endOfChapter
+    case endOfItem
+
+    static let all: [SleepTimerOption] = [
+        .minutes(5), .minutes(15), .minutes(30), .minutes(45), .minutes(60),
+        .endOfChapter, .endOfItem
+    ]
+
+    var id: String {
+        switch self {
+        case .minutes(let value): "minutes.\(value)"
+        case .endOfChapter:       "endOfChapter"
+        case .endOfItem:          "endOfItem"
+        }
+    }
+}
+
 /// Oxutma zamanı istifadəçiyə bir dəfə göstərilən xəbərdarlıqlar.
 enum PlaybackNotice: Equatable, Sendable {
     /// VLC mühərriki işə düşür: PiP və AirPlay video itir.

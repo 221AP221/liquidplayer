@@ -1,3 +1,4 @@
+import AVKit
 import SwiftUI
 
 struct NowPlayingScreen: View {
@@ -5,9 +6,10 @@ struct NowPlayingScreen: View {
     @Environment(\.dismiss) private var dismiss
     @State private var sheet: NowPlayingSheet?
     @State private var scrubFraction: Double?
+    @State private var isVideoFullscreen = false
 
     enum NowPlayingSheet: String, Identifiable {
-        case queue, lyrics, tracks, chapters, equalizer
+        case queue, lyrics, tracks, chapters, equalizer, folder, fileInfo
         var id: String { rawValue }
     }
 
@@ -20,10 +22,34 @@ struct NowPlayingScreen: View {
                     header(item)
 
                     if item.isVideo {
-                        VideoSurface()
-                            .aspectRatio(16.0 / 9.0, contentMode: .fit)
-                            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
-                            .padding(.top, Theme.Spacing.lg)
+                        Group {
+                            // Tam ekran açıqdırsa səth orada yaşayır: VLC-nin render
+                            // görüntüsü eyni anda iki yerdə ola bilmir.
+                            if isVideoFullscreen {
+                                Color.black
+                            } else {
+                                VideoSurface()
+                                    // Yeni fayl — yeni mühərrik — yeni səth.
+                                    .id(player.engineGeneration)
+                            }
+                        }
+                        .aspectRatio(16.0 / 9.0, contentMode: .fit)
+                        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
+                        .overlay(alignment: .bottomTrailing) {
+                            Button { isVideoFullscreen = true } label: {
+                                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(.white)
+                                    .frame(width: 32, height: 32)
+                                    .background(.ultraThinMaterial, in: Circle())
+                                    .hitTarget()
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(Text("video.fullscreen"))
+                            .padding(Theme.Spacing.xs)
+                        }
+                        .onTapGesture(count: 2) { isVideoFullscreen = true }
+                        .padding(.top, Theme.Spacing.lg)
                     } else {
                         ArtworkView(
                             image: item.artworkData.flatMap(UIImage.init(data:)),
@@ -55,7 +81,18 @@ struct NowPlayingScreen: View {
             case .tracks: TrackSelectorSheet()
             case .chapters: ChaptersSheet()
             case .equalizer: EqualizerSheet()
+            case .folder:
+                if let folder = player.current?.folder {
+                    NavigationStack { FolderDetailScreen(folder: folder) }
+                        .presentationDetents([.medium, .large])
+                        .presentationBackground(.ultraThinMaterial)
+                }
+            case .fileInfo:
+                if let item = player.current { FileInfoSheet(item: item) }
             }
+        }
+        .fullScreenCover(isPresented: $isVideoFullscreen) {
+            FullscreenVideoView()
         }
     }
 
@@ -89,12 +126,19 @@ struct NowPlayingScreen: View {
                 Button("bookmarks.addHere", systemImage: "bookmark") {
                     _ = player.addBookmark()
                 }
+                rateMenu
+                sleepTimerMenu
                 Button("eq.title", systemImage: "slider.vertical.3") {
                     sheet = .equalizer
                 }
                 Divider()
-                Button("menu.showInFolder", systemImage: "folder") {}
-                Button("menu.fileInfo", systemImage: "info.circle") {}
+                Button("menu.showInFolder", systemImage: "folder") {
+                    sheet = .folder
+                }
+                .disabled(item.folder == nil)
+                Button("menu.fileInfo", systemImage: "info.circle") {
+                    sheet = .fileInfo
+                }
             } label: {
                 Image(systemName: "ellipsis")
                     .font(.system(size: 17, weight: .semibold))
@@ -115,6 +159,9 @@ struct NowPlayingScreen: View {
                     .font(.system(size: 17))
                     .foregroundStyle(Theme.Colors.textSecondary)
                     .lineLimit(1)
+                if player.rate != 1 || player.sleepTimer != nil {
+                    statusBadges
+                }
             }
             Spacer(minLength: 0)
             Button {
@@ -170,6 +217,76 @@ struct NowPlayingScreen: View {
             .foregroundStyle(Theme.Colors.textSecondary)
         }
         .padding(.top, Theme.Spacing.lg)
+    }
+
+    // MARK: - Sürət və yuxu taymeri
+
+    private var rateMenu: some View {
+        Menu {
+            Picker("settings.rate", selection: Bindable(player).rate) {
+                ForEach(PlayerController.availableRates, id: \.self) { rate in
+                    Text(rate.rateLabel).tag(rate)
+                }
+            }
+        } label: {
+            Label {
+                Text("settings.rate") + Text(verbatim: " · \(player.rate.rateLabel)")
+            } icon: {
+                Image(systemName: "gauge.with.dots.needle.67percent")
+            }
+        }
+    }
+
+    private var sleepTimerMenu: some View {
+        Menu {
+            ForEach(SleepTimerOption.all) { option in
+                Button(sleepTimerTitle(option)) { player.setSleepTimer(option) }
+                    .disabled(option == .endOfChapter && player.chapters.isEmpty)
+            }
+            if player.sleepTimer != nil {
+                Divider()
+                Button("sleep.off", role: .destructive) { player.setSleepTimer(nil) }
+            }
+        } label: {
+            Label("sleep.title", systemImage: player.sleepTimer == nil ? "moon" : "moon.fill")
+        }
+    }
+
+    private func sleepTimerTitle(_ option: SleepTimerOption) -> String {
+        switch option {
+        case .minutes(let minutes):
+            String(format: String(localized: "sleep.minutes"), minutes)
+        case .endOfChapter:
+            String(localized: "sleep.endOfChapter")
+        case .endOfItem:
+            String(localized: "sleep.endOfItem")
+        }
+    }
+
+    /// Başlığın altında: sürət 1x deyilsə və yuxu taymeri işləyirsə.
+    private var statusBadges: some View {
+        HStack(spacing: Theme.Spacing.xs) {
+            if player.rate != 1 {
+                StatusBadge(systemImage: "gauge.with.dots.needle.67percent", text: player.rate.rateLabel)
+            }
+            if let timer = player.sleepTimer {
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    StatusBadge(systemImage: "moon.fill", text: sleepTimerLabel(timer, now: context.date))
+                }
+            }
+        }
+        .padding(.top, 4)
+    }
+
+    private func sleepTimerLabel(_ timer: SleepTimer, now: Date) -> String {
+        switch timer {
+        case .at(let date):
+            max(0, date.timeIntervalSince(now)).timeLabel
+        case .endOfChapter:
+            String(localized: "sleep.endOfChapter")
+        case .endOfItem:
+            String(localized: "sleep.endOfItem")
+        }
     }
 
     /// Fəsilli fayllarda: hazırkı fəslin adı və fəsillər arası keçid.
@@ -318,10 +435,11 @@ struct NowPlayingScreen: View {
                 }
                 .buttonStyle(.plain)
             } else {
-                Button {} label: {
-                    Image(systemName: "airplayaudio").frame(maxWidth: .infinity).hitTarget()
-                }
-                .buttonStyle(.plain)
+                // Sistem marşrut seçicisi: AirPlay, Bluetooth, dinamik.
+                RoutePickerButton(prioritizesVideoDevices: isVideo)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: Theme.Size.hitTarget)
+                    .accessibilityLabel(Text("airplay.title"))
             }
 
             Button { sheet = .chapters } label: {
@@ -340,6 +458,38 @@ struct NowPlayingScreen: View {
         .foregroundStyle(Theme.Colors.textPrimary.opacity(0.8))
         .frame(height: 52)
         .glassCard(cornerRadius: 26)
+    }
+}
+
+private struct StatusBadge: View {
+    let systemImage: String
+    let text: String
+
+    var body: some View {
+        Label(text, systemImage: systemImage)
+            .font(.system(size: 12, weight: .semibold).monospacedDigit())
+            .foregroundStyle(Theme.Colors.accent)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(Theme.Colors.accent.opacity(0.14), in: Capsule())
+    }
+}
+
+/// `AVRoutePickerView` — AirPlay və Bluetooth seçimi üçün sistemin öz düyməsi.
+struct RoutePickerButton: UIViewRepresentable {
+    var prioritizesVideoDevices = false
+
+    func makeUIView(context: Context) -> AVRoutePickerView {
+        let view = AVRoutePickerView()
+        view.backgroundColor = .clear
+        view.tintColor = UIColor(Theme.Colors.textPrimary.opacity(0.8))
+        view.activeTintColor = UIColor(Theme.Colors.accent)
+        view.prioritizesVideoDevices = prioritizesVideoDevices
+        return view
+    }
+
+    func updateUIView(_ view: AVRoutePickerView, context: Context) {
+        view.prioritizesVideoDevices = prioritizesVideoDevices
     }
 }
 

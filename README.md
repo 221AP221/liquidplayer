@@ -113,11 +113,24 @@ Eyni qovluğu ikinci dəfə əlavə etmək dublikat yaratmır.
 **iPad.** Geniş endə (`horizontalSizeClass == .regular`) tab bar yerinə
 `NavigationSplitView` yan paneli açılır, kitabxana şəbəkəsi enə görə sütun artırır.
 
+**Pleyer.** Sürət (0.75x–2x, saxlanılır), yuxu taymeri (dəqiqə, fəsil sonu, fayl sonu),
+shuffle (təkrarsız, «təkrar: hamısı» ilə dövr), redaktə olunan növbə («növbəti oxut»,
+«növbəyə əlavə et», sürüşdürüb sırala/sil). Zəng və ya Siri səsi kəsəndə dayanır və
+lazım gələrsə davam edir, qulaqlıq çıxanda dayanır — VLC üçün də. Kilid ekranı
+play/pause ayrıca idarə olunur. Video tam ekranda açılır, iki toxunuşla ±10 s.
+
+**Kitabxana ekranları.** Bütün fayllar şəbəkədə (lazy), seçilmişlər bölməsi, səsli kitab
+filtri, qovluq detalı və qovluğu kitabxanadan silmə (fayllar diskdə qalır), fayl
+məlumatı, faylın daxili sözləri (iTunes/ID3), AirPlay marşrut seçicisi.
+
+**Köçürülən fayllar.** Qovluq daxilində yeri dəyişən fayl ad və ölçüyə görə tanınır —
+oxunmuş yer və əlfəcinlər itmir.
+
 ## Nə hazır deyil
 
-- Faylın qovluq içində yerini dəyişməsi yeni element kimi görünür (köhnəsi `isMissing` olur)
-- Əlfəcin qeydini sonradan redaktə etmək
-- EQ-nun VLC zolaqları (60 Hz…16 kHz) bizimkilərlə indeks üzrə uyğunlaşdırılır, tezlik üzrə yox
+- Swift 6 dil rejimi (aşağıda)
+- Sinxron (LRC) sözlər — yalnız düz mətn göstərilir
+- VLC faylları üçün sözlər (AVFoundation MKV/FLAC oxumur)
 
 ## Bilinən texniki qeydlər
 
@@ -125,7 +138,9 @@ Eyni qovluğu ikinci dəfə əlavə etmək dublikat yaratmır.
   Səbəb: `MPRemoteCommandCenter` closure-ları Sendable işarələnməyib və Swift 6 rejimində
   `PlayerController`-i tutmaq xəta verir. Swift 6-ya keçid ayrıca addımdır — remote komandaları
   nazik `nonisolated` adapterə bağlamaq kifayət edir.
-- **Axtarış yaddaşdadır.** SwiftData predikatları `localizedStandardContains` dəstəkləmir.
-  10 000 fayldan sonra FTS5 indeksi lazım olacaq.
+- **Axtarış yaddaşdadır.** Başlıq, fayl adı, ifaçı və albom üzrə; 10 000 faylda da
+  millisaniyələr çəkir. Ondan çox kitabxanada FTS5 indeksi lazım olacaq.
+- **Bundle ID.** `project.yml`-də `BUNDLE_ID_PREFIX` (indi `com.example`) — App Store və
+  TestFlight üçün yalnız onu dəyiş.
 - **AVFoundation MKV oxumur**, ona görə idxal zamanı belə faylların metadatası boş qalır —
   başlıq fayl adından götürülür, dəqiq uzunluq isə fayl ilk dəfə VLC ilə açılanda yazılır.

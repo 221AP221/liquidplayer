@@ -8,6 +8,9 @@ options:
 
 settings:
   base:
+    # App Store / TestFlight üçün yalnız bu sətri öz domeninlə dəyiş
+    # (məs. `az.adin`), həm app, həm test bundle-ı ondan qurulur.
+    BUNDLE_ID_PREFIX: com.example
     SWIFT_VERSION: "5.0"
     SWIFT_STRICT_CONCURRENCY: targeted
     ENABLE_USER_SCRIPT_SANDBOXING: YES
@@ -44,7 +47,7 @@ targets:
           - UIInterfaceOrientationLandscapeRight
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.liquidplayer
+        PRODUCT_BUNDLE_IDENTIFIER: $(BUNDLE_ID_PREFIX).liquidplayer
         TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: NO
     # Paylaşılan sxem: `xcodebuild test -scheme LiquidPlayer` testləri də işlədir.
@@ -61,7 +64,7 @@ targets:
       - target: LiquidPlayer
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.liquidplayer.tests
+        PRODUCT_BUNDLE_IDENTIFIER: $(BUNDLE_ID_PREFIX).liquidplayer.tests
         GENERATE_INFOPLIST_FILE: YES
         TEST_HOST: $(BUILT_PRODUCTS_DIR)/LiquidPlayer.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LiquidPlayer
         BUNDLE_LOADER: $(TEST_HOST)

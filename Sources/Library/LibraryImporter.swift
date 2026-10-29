@@ -155,6 +155,25 @@ final class LibraryImporter {
             }
         }
 
+        // Qovluq daxilində köçürülmüş fayl: köhnə yerində yoxdur, yeni yerində «yeni»
+        // görünür. Ad və ölçü üst-üstə düşürsə eyni fayldır — oxunmuş yer və
+        // əlfəcinlər itməsin deyə köhnə element yeni yola bağlanır.
+        var unseenBySignature: [String: MediaItem] = [:]
+        for item in folder.items where !seen.contains(item.id) {
+            unseenBySignature[Self.signature(filename: item.filename, size: item.fileSize)] = item
+        }
+        if !unseenBySignature.isEmpty {
+            newFiles = newFiles.filter { file in
+                let key = Self.signature(filename: file.url.lastPathComponent, size: Self.fileSize(of: file.url))
+                guard let moved = unseenBySignature.removeValue(forKey: key) else { return true }
+                moved.relativePath = file.relativePath
+                moved.bookmark = Self.bookmark(for: file.url) ?? moved.bookmark
+                moved.isMissing = false
+                seen.insert(moved.id)
+                return false
+            }
+        }
+
         for item in folder.items where !seen.contains(item.id) {
             item.isMissing = true
         }
@@ -221,6 +240,14 @@ final class LibraryImporter {
         return String(filePath.dropFirst(prefix.count))
     }
 
+    private static func fileSize(of url: URL) -> Int64 {
+        (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize).flatMap(Int64.init) ?? 0
+    }
+
+    private static func signature(filename: String, size: Int64) -> String {
+        "\(filename.lowercased())|\(size)"
+    }
+
     private static func bookmark(for url: URL) -> Data? {
         try? url.bookmarkData(
             options: .minimalBookmark,
@@ -235,7 +262,7 @@ final class LibraryImporter {
     private static func makeItem(from url: URL, relativePath: String) async -> MediaItem? {
         let ext = url.pathExtension.lowercased()
         let filename = url.lastPathComponent
-        let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize).flatMap(Int64.init) ?? 0
+        let size = Self.fileSize(of: url)
         let bookmark = Self.bookmark(for: url)
 
         let probe = await probeMetadata(at: url)

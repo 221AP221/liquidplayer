@@ -82,3 +82,30 @@ final class LibraryPathTests: XCTestCase {
         XCTAssertEqual(LibraryImporter.relativePath(of: file, in: root), "01.mp3")
     }
 }
+
+final class QueueReorderTests: XCTestCase {
+
+    private func move(_ items: [String], _ source: [Int], to destination: Int) -> [String] {
+        PlayerController.reordered(items, moving: IndexSet(source), to: destination)
+    }
+
+    func testMoveDown() {
+        XCTAssertEqual(move(["a", "b", "c", "d"], [0], to: 2), ["b", "a", "c", "d"])
+    }
+
+    func testMoveToEnd() {
+        XCTAssertEqual(move(["a", "b", "c", "d"], [0], to: 4), ["b", "c", "d", "a"])
+    }
+
+    func testMoveUpToStart() {
+        XCTAssertEqual(move(["a", "b", "c", "d"], [3], to: 0), ["d", "a", "b", "c"])
+    }
+
+    func testMoveSeveral() {
+        XCTAssertEqual(move(["a", "b", "c", "d"], [1, 2], to: 4), ["a", "d", "b", "c"])
+    }
+
+    func testOutOfRangeIsIgnored() {
+        XCTAssertEqual(move(["a", "b"], [5], to: 0), ["a", "b"])
+    }
+}

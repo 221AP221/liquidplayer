@@ -6,6 +6,8 @@ struct ChaptersSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var isAddingBookmark = false
     @State private var bookmarkNote = ""
+    @State private var editingBookmark: Bookmark?
+    @State private var editedNote = ""
 
     var body: some View {
         NavigationStack {
@@ -34,6 +36,20 @@ struct ChaptersSheet: View {
                 }
             } message: {
                 Text(String(format: String(localized: "bookmarks.addAt"), player.snapshot.position.timeLabel))
+            }
+            .alert(
+                "bookmarks.edit",
+                isPresented: Binding(
+                    get: { editingBookmark != nil },
+                    set: { if !$0 { editingBookmark = nil } }
+                )
+            ) {
+                TextField("bookmarks.notePlaceholder", text: $editedNote)
+                Button("action.cancel", role: .cancel) { editingBookmark = nil }
+                Button("action.save") {
+                    if let editingBookmark { player.renameBookmark(editingBookmark, note: editedNote) }
+                    editingBookmark = nil
+                }
             }
         }
         .presentationDetents([.medium, .large])
@@ -80,6 +96,18 @@ struct ChaptersSheet: View {
                     } label: {
                         Label("action.delete", systemImage: "trash")
                     }
+                    Button {
+                        startEditing(bookmark)
+                    } label: {
+                        Label("action.edit", systemImage: "pencil")
+                    }
+                    .tint(Theme.Colors.violet)
+                }
+                .contextMenu {
+                    Button("action.edit", systemImage: "pencil") { startEditing(bookmark) }
+                    Button("action.delete", systemImage: "trash", role: .destructive) {
+                        player.deleteBookmark(bookmark)
+                    }
                 }
             }
         } header: {
@@ -89,6 +117,11 @@ struct ChaptersSheet: View {
                 Text("bookmarks.empty")
             }
         }
+    }
+
+    private func startEditing(_ bookmark: Bookmark) {
+        editedNote = bookmark.note
+        editingBookmark = bookmark
     }
 
     private var bookmarks: [Bookmark] {
