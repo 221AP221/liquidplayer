@@ -213,7 +213,7 @@ final class LibraryImporter {
     }
 
     /// `/…/Musiqi/Albom/01.mp3` → `Albom/01.mp3`.
-    private nonisolated static func relativePath(of file: URL, in root: URL) -> String {
+    nonisolated static func relativePath(of file: URL, in root: URL) -> String {
         let rootPath = root.standardizedFileURL.resolvingSymlinksInPath().path
         let filePath = file.standardizedFileURL.resolvingSymlinksInPath().path
         let prefix = rootPath.hasSuffix("/") ? rootPath : rootPath + "/"

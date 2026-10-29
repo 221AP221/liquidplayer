@@ -149,25 +149,37 @@ final class VLCPlaybackEngine: NSObject, PlaybackEngine {
     // MARK: - Ekvalayzer
 
     /// VLC-nin 10 zolağı (60 Hz ... 16 kHz) bizim zolaqlarla indeks üzrə üst-üstə düşür.
+    ///
+    /// VLCKit 3.6-dan `VLCAudioEqualizer` işlədilir; köhnə `equalizerEnabled` /
+    /// `setAmplification(_:forBand:)` deprecated-dir. `nil` EQ-nu tam söndürür.
     func applyEqualizer(_ settings: EqualizerSettings) {
-        player.equalizerEnabled = settings.isEnabled
-        guard settings.isEnabled else { return }
-        let bandCount = Int(player.numberOfBands)
-        for (index, gain) in settings.gains.enumerated() where index < bandCount {
-            player.setAmplification(CGFloat(gain), forBand: UInt32(index))
+        guard settings.isEnabled else {
+            player.equalizer = nil
+            return
         }
+        let equalizer = player.equalizer ?? VLCAudioEqualizer()
+        for band in equalizer.bands {
+            let index = Int(band.index)
+            guard settings.gains.indices.contains(index) else { continue }
+            band.amplification = settings.gains[index]
+        }
+        // Yenidən təyin etmək dəyişikliyin oynayan mediaya tətbiqini təmin edir.
+        player.equalizer = equalizer
     }
 
     // MARK: - Detallar
 
     private func emitSnapshot() {
         let position = Double(player.time.intValue) / 1000
-        let remaining = abs(Double(player.remainingTime?.intValue ?? 0)) / 1000
+        // `remainingTime` `weak` elan olunub və Swift-ə SDK-dan asılı olaraq
+        // optional və ya qeyri-optional gəlir; `media.length` hər iki halda sabitdir.
+        // Media hələ açılmayıbsa uzunluq 0-dır — onda mövqe götürülür.
+        let length = Double(player.media?.length.intValue ?? 0) / 1000
         onSnapshot?(
             PlaybackSnapshot(
                 isPlaying: player.isPlaying,
                 position: position,
-                duration: position + remaining,
+                duration: max(length, position),
                 isBuffering: player.state == .buffering,
                 engine: .vlc
             )

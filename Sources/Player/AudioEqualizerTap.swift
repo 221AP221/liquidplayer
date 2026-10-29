@@ -82,6 +82,8 @@ final class AudioEqualizerTap: @unchecked Sendable {
                 processor.unprepare()
             },
             process: { tap, numberFrames, _, bufferListInOut, numberFramesOut, flagsOut in
+                // Bufer göstəriciləri NULL gəlir; sistem öz buferlərini verir və
+                // onları yerində dəyişmək sənədlərdə icazəlidir.
                 let status = MTAudioProcessingTapGetSourceAudio(
                     tap, numberFrames, bufferListInOut, flagsOut, nil, numberFramesOut
                 )
@@ -89,7 +91,12 @@ final class AudioEqualizerTap: @unchecked Sendable {
                 let processor = Unmanaged<AudioEqualizerTap>
                     .fromOpaque(MTAudioProcessingTapGetStorage(tap))
                     .takeUnretainedValue()
-                processor.process(bufferListInOut, frameCount: Int(numberFramesOut.pointee))
+                let isDiscontinuity = flagsOut.pointee & kMTAudioProcessingTapFlag_StartOfStream != 0
+                processor.process(
+                    bufferListInOut,
+                    frameCount: Int(numberFramesOut.pointee),
+                    isDiscontinuity: isDiscontinuity
+                )
             }
         )
 
@@ -113,8 +120,11 @@ final class AudioEqualizerTap: @unchecked Sendable {
     }
 
     // MARK: - Tap həyat dövrü
+    //
+    // Bu üç metod `private` deyil ki, unit testlər onları tap olmadan, hazır
+    // buferlə çağıra bilsin. App kodu onları birbaşa çağırmır.
 
-    private func prepare(maxFrames: Int, format: AudioStreamBasicDescription) {
+    func prepare(maxFrames: Int, format: AudioStreamBasicDescription) {
         os_unfair_lock_lock(lock)
         defer { os_unfair_lock_unlock(lock) }
 
@@ -136,7 +146,7 @@ final class AudioEqualizerTap: @unchecked Sendable {
         rebuildFilters()
     }
 
-    private func unprepare() {
+    func unprepare() {
         os_unfair_lock_lock(lock)
         defer { os_unfair_lock_unlock(lock) }
         destroyFilters()
@@ -147,7 +157,13 @@ final class AudioEqualizerTap: @unchecked Sendable {
     }
 
     /// Real-time axın. Yaddaş ayırmır, kilidi gözləmir.
-    private func process(_ bufferList: UnsafeMutablePointer<AudioBufferList>, frameCount: Int) {
+    /// `isDiscontinuity` — seek və ya axının yenidən başlaması: köhnə filtr
+    /// yaddaşı yeni səsə «quyruq» kimi qarışmasın deyə sıfırlanır.
+    func process(
+        _ bufferList: UnsafeMutablePointer<AudioBufferList>,
+        frameCount: Int,
+        isDiscontinuity: Bool = false
+    ) {
         guard os_unfair_lock_trylock(lock) else { return }
         defer { os_unfair_lock_unlock(lock) }
 
@@ -156,6 +172,9 @@ final class AudioEqualizerTap: @unchecked Sendable {
         else { return }
 
         let delayStride = 2 * sectionCount + 2
+        if isDiscontinuity {
+            delay.update(repeating: 0, count: channelCount * delayStride)
+        }
         var channelIndex = 0
 
         for buffer in UnsafeMutableAudioBufferListPointer(bufferList) {

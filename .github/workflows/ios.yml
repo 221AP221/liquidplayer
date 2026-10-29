@@ -1,7 +1,9 @@
-name: Build və ekran görüntüsü
+name: Build, test və ekran görüntüsü
 
-# Windows-da Mac olmadan yoxlamaq üçün: hər push-da layihə qurulur,
-# simulyatorda işə salınır və ekran görüntüsü artefakt kimi yüklənir.
+# Windows-da Mac olmadan yoxlamaq üçün: hər push-da layihə qurulur, unit testlər
+# simulyatorda işləyir, app işə salınır və ekran görüntüsü artefakt kimi yüklənir.
+# İkinci job eyni kodu VLCKit ilə qurur ki, `#if canImport(MobileVLCKit)` içindəki
+# kod da kompilyatordan keçsin.
 on:
   push:
   pull_request:
@@ -9,8 +11,9 @@ on:
 
 jobs:
   build:
+    name: AVFoundation (build + test)
     runs-on: macos-15
-    timeout-minutes: 30
+    timeout-minutes: 40
 
     steps:
       - uses: actions/checkout@v4
@@ -26,25 +29,7 @@ jobs:
       - name: Layihəni yarat
         run: xcodegen generate
 
-      - name: Build (iOS Simulator)
-        run: |
-          set -o pipefail
-          xcodebuild build \
-            -project LiquidPlayer.xcodeproj \
-            -scheme LiquidPlayer \
-            -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=NO \
-            | xcbeautify || xcodebuild build \
-            -project LiquidPlayer.xcodeproj \
-            -scheme LiquidPlayer \
-            -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=NO
-
-      - name: Simulyator yarat və appı işə sal
+      - name: Simulyator yarat
         run: |
           RUNTIME=$(xcrun simctl list runtimes --json \
             | jq -r '.runtimes[] | select(.platform == "iOS" and .isAvailable) | .identifier' | tail -1)
@@ -52,9 +37,23 @@ jobs:
             | jq -r '.devicetypes[] | select(.name | startswith("iPhone 16")) | .identifier' | head -1)
           echo "Runtime: $RUNTIME"
           echo "Device:  $DEVICE_TYPE"
-
           UDID=$(xcrun simctl create ci-device "$DEVICE_TYPE" "$RUNTIME")
-          xcrun simctl boot "$UDID"
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+
+      - name: Build və unit testlər
+        run: |
+          xcodebuild test \
+            -project LiquidPlayer.xcodeproj \
+            -scheme LiquidPlayer \
+            -configuration Debug \
+            -destination "id=$UDID" \
+            -derivedDataPath build \
+            -quiet \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Appı işə sal və ekran görüntüsü çək
+        run: |
+          xcrun simctl boot "$UDID" || true
           xcrun simctl bootstatus "$UDID" -b
 
           APP=$(find build/Build/Products -name "LiquidPlayer.app" -maxdepth 3 | head -1)
@@ -74,3 +73,34 @@ jobs:
           name: simulator-screenshots
           path: screenshots/
           if-no-files-found: warn
+
+  build-vlc:
+    name: VLCKit ilə build
+    runs-on: macos-15
+    timeout-minutes: 40
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: XcodeGen quraşdır
+        run: brew install xcodegen
+
+      - name: Layihəni yarat
+        run: xcodegen generate
+
+      - name: VLCKit (CocoaPods)
+        run: pod install
+
+      # CocoaPods-un «Embed Pods Frameworks» skripti Xcode-un skript sandbox-u ilə
+      # işləmir, ona görə bu build-də sandbox söndürülür.
+      - name: Build (iOS Simulator, VLCKit ilə)
+        run: |
+          xcodebuild build \
+            -workspace LiquidPlayer.xcworkspace \
+            -scheme LiquidPlayer \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            -quiet \
+            CODE_SIGNING_ALLOWED=NO \
+            ENABLE_USER_SCRIPT_SANDBOXING=NO

@@ -10,7 +10,8 @@ SwiftUI yalnız macOS-da, Xcode ilə qurulur. Windows-da build etmək mümkün d
 
 macOS runner-ləri **ictimai (public) repozitoriyalarda pulsuz və limitsizdir**.
 Layihədə hazır `.github/workflows/ios.yml` var: hər push-da layihəni qurur,
-simulyatorda işə salır və ekran görüntüsünü artefakt kimi yükləyir.
+unit testləri işlədir, simulyatorda işə salır və ekran görüntüsünü artefakt kimi
+yükləyir. İkinci job (`VLCKit ilə build`) eyni kodu VLCKit ilə qurur.
 
 ### Əvvəlcə workflow faylını yerinə qoy
 
@@ -89,9 +90,9 @@ MacBook Air M1 daha ucuz düşür. Xcode pulsuzdur.
 olaraq mümkündür, amma Apple-ın lisenziya şərtləri buna icazə vermir və
 performans simulyator üçün praktiki deyil. Tövsiyə etmirəm.
 
-**VLCKit CI-da.** Hazırkı workflow VLCKit olmadan qurur — kod `#if canImport`
-ilə qorunub. CocoaPods əlavə edəndən sonra workflow-a `pod install` addımı
-və `-workspace LiquidPlayer.xcworkspace` keçidi lazım olacaq.
+**VLCKit CI-da.** Workflow iki job işlədir: biri VLCKit olmadan (kod `#if canImport`
+ilə qorunub), digəri `pod install` edib `LiquidPlayer.xcworkspace`-i qurur. Beləliklə
+VLC mühərrikinin kodu da hər push-da kompilyatordan keçir.
 
 ---
 

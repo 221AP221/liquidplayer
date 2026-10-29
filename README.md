@@ -25,24 +25,29 @@ Kod VLCKit **olmadan da kompilyasiya olunur** — `VLCPlaybackEngine.swift` büt
 `#if canImport(MobileVLCKit)` içindədir. Onsuz MKV/FLAC faylları
 «format açılmır» xəbərdarlığı verir, qalan hər şey işləyir.
 
-Ən etibarlı yol CocoaPods-dur:
-
-```ruby
-# Podfile
-platform :ios, '18.0'
-target 'LiquidPlayer' do
-  use_frameworks!
-  pod 'MobileVLCKit', '~> 3.6.0'
-end
-```
+Ən etibarlı yol CocoaPods-dur. Kökdə hazır `Podfile` var (`MobileVLCKit ~> 3.6.0`):
 
 ```bash
+xcodegen generate
 pod install
 open LiquidPlayer.xcworkspace
 ```
 
+Xcode CocoaPods skriptində sandbox xətası versə, target-da
+`ENABLE_USER_SCRIPT_SANDBOXING = NO` qoy (CI də belə edir).
+
 VLCKit-in rəsmi Swift Package dəstəyi qeyri-sabitdir; SPM istifadə edəcəksənsə
 əvvəlcə seçdiyin repozitoriyanın hazırkı vəziyyətini yoxla.
+
+## Testlər
+
+`Tests/LiquidPlayerTests` — ekvalayzerin DSP-si (real audio buferində səviyyə ölçülür),
+EQ modeli, fəsillər və kitabxana yolları. Xcode-da ⌘U, ya da:
+
+```bash
+xcodebuild test -project LiquidPlayer.xcodeproj -scheme LiquidPlayer \
+  -destination 'platform=iOS Simulator,name=iPhone 16'
+```
 
 ## Qatlar
 

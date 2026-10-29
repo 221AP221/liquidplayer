@@ -47,3 +47,21 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.example.liquidplayer
         TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: NO
+    # Paylaşılan sxem: `xcodebuild test -scheme LiquidPlayer` testləri də işlədir.
+    scheme:
+      testTargets:
+        - LiquidPlayerTests
+
+  LiquidPlayerTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests/LiquidPlayerTests
+    dependencies:
+      - target: LiquidPlayer
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.liquidplayer.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/LiquidPlayer.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LiquidPlayer
+        BUNDLE_LOADER: $(TEST_HOST)
